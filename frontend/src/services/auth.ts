@@ -8,7 +8,7 @@ import type { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, Us
 export const authService = {
   // 登录
   async login(credentials: LoginRequest): Promise<LoginResponse> {
-    const response = await api.post<LoginResponse>('/auth/login', credentials);
+    const response = (await api.post<LoginResponse>('/auth/login', credentials)) as LoginResponse;
 
     // 保存token到localStorage
     if (response.token) {
@@ -20,7 +20,7 @@ export const authService = {
 
   // 注册
   async register(userData: RegisterRequest): Promise<RegisterResponse> {
-    const response = await api.post<RegisterResponse>('/auth/register', userData);
+    const response = (await api.post<RegisterResponse>('/auth/register', userData)) as RegisterResponse;
 
     // 保存token到localStorage
     if (response.token) {
@@ -32,7 +32,7 @@ export const authService = {
 
   // 获取当前用户信息
   async getCurrentUser(): Promise<User> {
-    return await api.get<User>('/auth/me');
+    return (await api.get<User>('/auth/me')) as User;
   },
 
   // 登出
