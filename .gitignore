@@ -146,3 +146,19 @@ frontend/src/stores/local-storage-backup.json
 # Temporary files
 temp/
 tmp/
+
+# Backup files
+*.backup
+*.backup*
+backup/
+*.bak
+*.old
+*~
+
+# Database backup files
+*.db.backup
+*.sqlite.backup
+
+# Frontend data backups
+frontend/src/data/*.backup
+frontend/src/data/*.backup*
