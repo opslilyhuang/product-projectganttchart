@@ -1,0 +1,21 @@
+{
+  "name": "ai-gantt-chart",
+  "version": "1.0.0",
+  "description": "中源生物 AI 项目甘特图 - 交互式可视化工具",
+  "main": "gantt_chart.py",
+  "scripts": {
+    "start": "python3 server.py",
+    "dev": "python3 server.py",
+    "generate": "python3 gantt_chart.py",
+    "install": "pip3 install -r requirements.txt"
+  },
+  "keywords": [
+    "gantt",
+    "chart",
+    "visualization",
+    "plotly",
+    "project-management"
+  ],
+  "author": "中源生物 AI 项目团队",
+  "license": "PRIVATE"
+}

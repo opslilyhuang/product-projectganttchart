@@ -1,0 +1,23 @@
+{
+  "name": "gantt-api",
+  "version": "1.0.0",
+  "description": "Gantt Chart API Server with Authentication and Real-time Collaboration",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "init-db": "node db-init.js"
+  },
+  "dependencies": {
+    "express": "^5.0.1",
+    "cors": "^2.8.5",
+    "better-sqlite3": "^11.8.1",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "socket.io": "^4.8.1"
+  },
+  "keywords": ["gantt", "api", "realtime", "collaboration"],
+  "author": "AI Project Team",
+  "license": "MIT"
+}
