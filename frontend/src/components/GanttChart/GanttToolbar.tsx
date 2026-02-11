@@ -3,8 +3,9 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Plus, Download, Upload, RotateCcw, Calendar, FileImage, FileText, Printer, ChevronDown, Activity, Zap, CalendarDays, Save, CheckCircle, Search, X } from 'lucide-react';
+import { Plus, Download, Upload, RotateCcw, Calendar, FileImage, FileText, Printer, ChevronDown, Activity, Zap, CalendarDays, Save, CheckCircle, Search, X, Database, Cloud } from 'lucide-react';
 import { useGanttStore } from '@/stores/ganttStore';
+import { useAuthStore } from '@/stores/authStore';
 import Button from '@/components/ui/Button';
 import { exportToPNG, exportToPDF, printGantt } from '@/utils/exportHelpers';
 import { exportToCalendar } from '@/utils/calendarExporter';
@@ -16,16 +17,58 @@ interface GanttToolbarProps {
 }
 
 export default function GanttToolbar({ onAddTask, viewType = 'project' }: GanttToolbarProps) {
-  const { config, setConfig, exportData, importData, resetData, tasks, setSearchQuery, searchQueries } = useGanttStore();
+  const { config, setConfig, exportData, importData, resetData, tasks, setSearchQuery, searchQueries, migrateToAPI } = useGanttStore();
+  const { user, isAuthenticated } = useAuthStore();
   const [currentView, setCurrentView] = useState<ViewMode>(config.view);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const [searchInput, setSearchInput] = useState(searchQueries[viewType] || '');
+  const [migrating, setMigrating] = useState(false);
+  const [migrationResult, setMigrationResult] = useState<{ success: boolean; message: string } | null>(null);
 
   // 当viewType或searchQueries改变时，同步搜索输入
   useEffect(() => {
     setSearchInput(searchQueries[viewType] || '');
   }, [viewType, searchQueries]);
+
+  const handleMigrate = async () => {
+    if (!isAuthenticated || !user) {
+      alert('请先登录才能迁移数据到云端');
+      return;
+    }
+
+    if (tasks.length === 0) {
+      alert('没有数据可以迁移');
+      return;
+    }
+
+    if (!confirm(`确定要将 ${tasks.length} 个任务迁移到云端数据库吗？\n\n迁移后数据将存储在云端，支持多用户访问。`)) {
+      return;
+    }
+
+    setMigrating(true);
+    setMigrationResult(null);
+
+    try {
+      console.log('开始迁移数据到API...');
+      const success = await migrateToAPI();
+
+      if (success) {
+        setMigrationResult({ success: true, message: `✅ 数据迁移成功！已迁移 ${tasks.length} 个任务到云端。` });
+        alert(`数据迁移成功！\n\n已迁移 ${tasks.length} 个任务到云端数据库。\n现在所有用户都可以访问这些数据。`);
+      } else {
+        setMigrationResult({ success: false, message: '❌ 数据迁移失败，请检查网络连接或联系管理员。' });
+        alert('数据迁移失败，请检查网络连接或联系管理员。');
+      }
+    } catch (error) {
+      console.error('数据迁移错误:', error);
+      setMigrationResult({ success: false, message: `❌ 数据迁移错误: ${error.message}` });
+      alert(`数据迁移错误: ${error.message}`);
+    } finally {
+      setMigrating(false);
+      setTimeout(() => setMigrationResult(null), 5000);
+    }
+  };
 
   const handleViewChange = (view: ViewMode) => {
     setCurrentView(view);
@@ -287,6 +330,29 @@ export default function GanttToolbar({ onAddTask, viewType = 'project' }: GanttT
             <Upload className="w-4 h-4 mr-1" />
             导入
           </Button>
+
+          {isAuthenticated && (
+            <Button
+              onClick={handleMigrate}
+              variant="outline"
+              size="sm"
+              disabled={migrating}
+              title={migrating ? '数据迁移中...' : '将本地数据迁移到云端数据库'}
+              className={migrating ? 'opacity-50 cursor-not-allowed' : ''}
+            >
+              {migrating ? (
+                <>
+                  <Cloud className="w-4 h-4 mr-1 animate-spin" />
+                  迁移中...
+                </>
+              ) : (
+                <>
+                  <Database className="w-4 h-4 mr-1" />
+                  迁移到云端
+                </>
+              )}
+            </Button>
+          )}
 
           <Button
             onClick={() => exportToCalendar(tasks, 'AI项目甘特图')}

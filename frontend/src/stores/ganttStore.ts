@@ -6,10 +6,14 @@ import { create } from 'zustand';
 import type { GanttTask, TaskLink, GanttConfig, GanttStore } from '@/types/gantt';
 import initialData from '@/data/initial-data.json';
 import { validateGanttData } from '@/utils/dataConverter';
+import api from '@/services/api';
 
 // 存储版本控制
 const STORAGE_VERSION = 3;
 const STORAGE_KEY = 'gantt-storage-v3';
+
+// 配置：是否使用后端API（true=使用API，false=使用localStorage）
+const USE_API = true;
 
 // 存储数据结构
 interface StorageData {
@@ -23,6 +27,147 @@ interface StorageData {
   resourceAssignments: any[];
   searchQueries: Record<'project' | 'product', string>;
 }
+
+// API辅助函数
+const apiCall = {
+  // 创建任务
+  createTask: async (task: GanttTask): Promise<void> => {
+    if (!USE_API) return;
+    try {
+      await api.post('/api/tasks', task);
+      console.log('✅ 任务已保存到API:', task.id);
+    } catch (error) {
+      console.error('保存任务到API失败:', error);
+      throw error;
+    }
+  },
+
+  // 更新任务
+  updateTask: async (id: string, updates: Partial<GanttTask>): Promise<void> => {
+    if (!USE_API) return;
+    try {
+      await api.put(`/api/tasks/${id}`, updates);
+      console.log('✅ 任务已更新到API:', id);
+    } catch (error) {
+      console.error('更新任务到API失败:', error);
+      throw error;
+    }
+  },
+
+  // 删除任务
+  deleteTask: async (id: string): Promise<void> => {
+    if (!USE_API) return;
+    try {
+      await api.delete(`/api/tasks/${id}`);
+      console.log('✅ 任务已从API删除:', id);
+    } catch (error) {
+      console.error('从API删除任务失败:', error);
+      throw error;
+    }
+  },
+
+  // 创建链接
+  createLink: async (link: TaskLink): Promise<void> => {
+    if (!USE_API) return;
+    try {
+      // 注意：后端可能需要单独的链接端点，这里使用任务端点作为示例
+      // 暂时跳过链接API调用
+      console.log('⚠️ 链接API调用暂未实现');
+    } catch (error) {
+      console.error('保存链接到API失败:', error);
+    }
+  },
+
+  // 删除链接
+  deleteLink: async (id: string): Promise<void> => {
+    if (!USE_API) return;
+    try {
+      // 暂时跳过链接API调用
+      console.log('⚠️ 链接API调用暂未实现');
+    } catch (error) {
+      console.error('从API删除链接失败:', error);
+    }
+  },
+
+  // 更新配置
+  updateConfig: async (config: GanttConfig): Promise<void> => {
+    if (!USE_API) return;
+    try {
+      await api.put('/api/config', config);
+      console.log('✅ 配置已保存到API');
+    } catch (error) {
+      console.error('保存配置到API失败:', error);
+    }
+  },
+
+  // 迁移数据到API
+  migrateData: async (data: StorageData): Promise<void> => {
+    if (!USE_API) return;
+    try {
+      const allTasks = [...data.projectTasks, ...data.productTasks];
+      await api.post('/api/migrate-data', {
+        tasks: allTasks,
+        links: data.links,
+        config: data.config
+      });
+      console.log('✅ 数据已迁移到API');
+    } catch (error) {
+      console.error('数据迁移到API失败:', error);
+      throw error;
+    }
+  }
+};
+
+// 从API加载数据
+const loadFromAPI = async (): Promise<StorageData | null> => {
+  if (!USE_API) {
+    console.log('🔧 API模式已禁用，跳过API加载');
+    return null;
+  }
+
+  try {
+    console.log('=== 从API加载数据 ===');
+    const response = await api.get('/api/tasks');
+    console.log('API响应:', response);
+
+    const tasks: GanttTask[] = response.tasks || [];
+    const links: TaskLink[] = response.links || [];
+
+    // 从API获取配置
+    let config: GanttConfig;
+    try {
+      const configResponse = await api.get('/api/config');
+      config = configResponse;
+    } catch (error) {
+      console.warn('获取配置失败，使用默认配置:', error);
+      config = initialData.config as GanttConfig;
+    }
+
+    // 将任务按视图分类
+    const projectTasks = tasks.filter(task => task.view === 'project');
+    const productTasks = tasks.filter(task => task.view === 'product');
+
+    console.log(`✅ 从API加载完成: ${tasks.length}个任务, ${links.length}个链接`);
+    console.log(`项目任务: ${projectTasks.length}, 产品任务: ${productTasks.length}`);
+
+    return {
+      version: STORAGE_VERSION,
+      timestamp: new Date().toISOString(),
+      projectTasks,
+      productTasks,
+      links,
+      config,
+      resources: [], // API暂时不支持资源
+      resourceAssignments: [], // API暂时不支持资源分配
+      searchQueries: { project: '', product: '' }
+    };
+  } catch (error) {
+    console.error('从API加载数据失败:', error);
+    // API失败时回退到localStorage
+    console.log('⚠️ API加载失败，回退到localStorage');
+    return null;
+  }
+};
 
 // 从localStorage加载数据（支持版本迁移）
 const loadFromStorage = (): StorageData | null => {
@@ -239,8 +384,19 @@ export const useGanttStore = create<GanttStore>()((set, get) => ({
       get().reorderTasks(newTask.parent, view);
     }, 0);
 
-    // 立即保存
+    // 立即保存到localStorage
     get().saveState();
+
+    // 异步保存到API
+    if (USE_API) {
+      (async () => {
+        try {
+          await apiCall.createTask(newTask);
+        } catch (error) {
+          console.error('保存任务到API失败，但已保存到本地:', error);
+        }
+      })();
+    }
   },
 
   updateTask: (id, updates) => {
@@ -259,18 +415,30 @@ export const useGanttStore = create<GanttStore>()((set, get) => ({
       set({ selectedTask: { ...currentSelected, ...updates } });
     }
 
-    // 立即保存
+    // 立即保存到localStorage
     get().saveState();
+
+    // 异步保存到API
+    if (USE_API) {
+      (async () => {
+        try {
+          await apiCall.updateTask(id, updates);
+        } catch (error) {
+          console.error('更新任务到API失败，但已保存到本地:', error);
+        }
+      })();
+    }
   },
 
   deleteTask: (id) => {
     console.log('🗑️ Store - deleteTask called, id:', id);
     const taskToDelete = get().tasks.find(t => t.id === id);
     const view = taskToDelete?.view || 'project';
+    let tasksToDelete: Set<string>;
 
     set((state) => {
       // 删除任务及其所有子任务
-      const tasksToDelete = new Set([id]);
+      tasksToDelete = new Set([id]);
       const findChildren = (parentId: string) => {
         state.tasks.forEach((task) => {
           if (task.parent === parentId) {
@@ -297,8 +465,21 @@ export const useGanttStore = create<GanttStore>()((set, get) => ({
       get().reorderTasks(taskToDelete?.parent || null, view);
     }, 0);
 
-    // 立即保存
+    // 立即保存到localStorage
     get().saveState();
+
+    // 异步从API删除
+    if (USE_API && tasksToDelete) {
+      (async () => {
+        try {
+          for (const taskId of tasksToDelete) {
+            await apiCall.deleteTask(taskId);
+          }
+        } catch (error) {
+          console.error('从API删除任务失败，但已从本地删除:', error);
+        }
+      })();
+    }
   },
 
   // 依赖关系操作
@@ -313,6 +494,17 @@ export const useGanttStore = create<GanttStore>()((set, get) => ({
     }));
 
     get().saveState();
+
+    // 异步保存到API
+    if (USE_API) {
+      (async () => {
+        try {
+          await apiCall.createLink(newLink);
+        } catch (error) {
+          console.error('保存链接到API失败，但已保存到本地:', error);
+        }
+      })();
+    }
   },
 
   deleteLink: (id) => {
@@ -321,6 +513,17 @@ export const useGanttStore = create<GanttStore>()((set, get) => ({
     }));
 
     get().saveState();
+
+    // 异步从API删除
+    if (USE_API) {
+      (async () => {
+        try {
+          await apiCall.deleteLink(id);
+        } catch (error) {
+          console.error('从API删除链接失败，但已从本地删除:', error);
+        }
+      })();
+    }
   },
 
   // 资源操作
@@ -413,6 +616,17 @@ export const useGanttStore = create<GanttStore>()((set, get) => ({
     }));
 
     get().saveState();
+
+    // 异步保存到API
+    if (USE_API) {
+      (async () => {
+        try {
+          await apiCall.updateConfig(config);
+        } catch (error) {
+          console.error('保存配置到API失败，但已保存到本地:', error);
+        }
+      })();
+    }
   },
 
   // 视图操作
@@ -693,6 +907,87 @@ export const useGanttStore = create<GanttStore>()((set, get) => ({
 
     console.log(`✅ 复制完成：${productTasks.length}个任务，${productLinks.length}个链接`);
     get().saveState();
+  },
+
+  // 数据迁移
+  migrateToAPI: async () => {
+    if (!USE_API) {
+      console.log('🔧 API模式已禁用，跳过数据迁移');
+      return false;
+    }
+
+    try {
+      console.log('=== 开始迁移数据到API ===');
+      const state = get();
+      const projectTasks = state.tasks.filter(t => t.view === 'project');
+      const productTasks = state.tasks.filter(t => t.view === 'product');
+
+      const storageData: StorageData = {
+        version: STORAGE_VERSION,
+        timestamp: new Date().toISOString(),
+        projectTasks,
+        productTasks,
+        links: state.links,
+        config: state.config,
+        resources: state.resources,
+        resourceAssignments: state.resourceAssignments,
+        searchQueries: state.searchQueries,
+      };
+
+      await apiCall.migrateData(storageData);
+      console.log('✅ 数据迁移到API完成');
+      return true;
+    } catch (error) {
+      console.error('数据迁移到API失败:', error);
+      return false;
+    }
+  },
+
+  // 从API加载数据
+  loadFromAPI: async () => {
+    if (!USE_API) {
+      console.log('🔧 API模式已禁用，跳过API加载');
+      return false;
+    }
+
+    try {
+      console.log('=== 从API加载数据 ===');
+      const response = await api.get('/api/tasks');
+      console.log('API响应:', response);
+
+      const tasks: GanttTask[] = response.tasks || [];
+      const links: TaskLink[] = response.links || [];
+
+      // 从API获取配置
+      let config: GanttConfig;
+      try {
+        const configResponse = await api.get('/api/config');
+        config = configResponse;
+      } catch (error) {
+        console.warn('获取配置失败，使用默认配置:', error);
+        config = initialData.config as GanttConfig;
+      }
+
+      // 初始化任务排序
+      const tasksWithOrder = initializeTaskOrders(tasks);
+      const tasksWithView = tasksWithOrder.map(task => ({
+        ...task,
+        view: task.view || 'project' as const
+      }));
+
+      set({
+        tasks: tasksWithView,
+        links,
+        config,
+        selectedTask: null,
+      });
+
+      console.log(`✅ 从API加载完成: ${tasks.length}个任务, ${links.length}个链接`);
+      return true;
+    } catch (error) {
+      console.error('从API加载数据失败:', error);
+      return false;
+    }
   },
 
   // 内部保存方法

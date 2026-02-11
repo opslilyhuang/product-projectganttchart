@@ -125,7 +125,7 @@ export interface GanttStore {
   loadInitialData: () => void;
   resetData: () => void;
   exportData: () => string;
-  importData: (json: string) => void;
-}
+  migrateToAPI: () => Promise<boolean>;
+  loadFromAPI: () => Promise<boolean>;
 
 export type ViewMode = 'day' | 'week' | 'month' | 'quarter';

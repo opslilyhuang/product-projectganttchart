@@ -129,6 +129,21 @@ db.exec(`
 
 console.log('✅ 数据库表创建成功！');
 
+// 添加缺失的列到tasks表（如果不存在）
+try {
+  db.exec(`ALTER TABLE tasks ADD COLUMN view TEXT DEFAULT 'project'`);
+  console.log('✅ 已添加 view 列到 tasks 表');
+} catch (error) {
+  console.log(`ℹ️  view 列可能已存在: ${error.message}`);
+}
+
+try {
+  db.exec(`ALTER TABLE tasks ADD COLUMN "order" INTEGER DEFAULT 0`);
+  console.log('✅ 已添加 order 列到 tasks 表');
+} catch (error) {
+  console.log(`ℹ️  order 列可能已存在: ${error.message}`);
+}
+
 // 创建默认管理员用户（用于测试）
 import bcrypt from 'bcryptjs';
 
