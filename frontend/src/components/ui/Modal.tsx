@@ -51,22 +51,22 @@ export default function Modal({
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* 遮罩层 */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+        className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
       {/* 模态框内容 */}
       <div className="flex min-h-full items-center justify-center p-4">
         <div
-          className={`relative w-full ${maxWidthClasses[maxWidth]} bg-white rounded-xl shadow-xl transform transition-all`}
+          className={`relative w-full ${maxWidthClasses[maxWidth]} bg-white rounded-lg shadow-lg transform transition-all`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* 头部 */}
-          <div className="flex items-center justify-between px-6 py-4 border-b">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-300">
             <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-500 hover:text-gray-700 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>

@@ -18,7 +18,7 @@ interface TaskEditorProps {
 }
 
 export default function TaskEditor({ task, isOpen, onClose }: TaskEditorProps) {
-  const { addTask, updateTask, tasks, links, addLink, deleteLink, activeView } = useGanttStore();
+  const { addTask, updateTask, tasks, links, addLink, deleteLink, deleteTask, activeView } = useGanttStore();
 
   const [formData, setFormData] = useState<Partial<GanttTask>>({
     text: '',
@@ -100,23 +100,23 @@ export default function TaskEditor({ task, isOpen, onClose }: TaskEditorProps) {
     <Modal isOpen={isOpen} onClose={onClose} title={task ? '✏️ 编辑任务' : '➕ 创建新任务'} maxWidth="2xl">
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* 基本信息区域 */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
+        <div className="bg-white rounded-lg border border-gray-300 p-6 mb-6">
           <div className="flex items-center gap-2 mb-3">
             <FileText className="w-5 h-5 text-blue-600" />
-            <h3 className="text-sm font-medium text-gray-700">基本信息</h3>
+            <h3 className="text-sm font-medium text-gray-900">基本信息</h3>
           </div>
 
           {/* 任务名称 */}
           <div className="mb-4">
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-              <Target className="w-4 h-4 text-blue-500" />
-              任务名称 <span className="text-red-500">*</span>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-900 mb-2">
+              <Target className="w-4 h-4 text-blue-600" />
+              任务名称 <span className="text-red-600">*</span>
             </label>
             <input
               type="text"
               value={formData.text}
               onChange={(e) => handleChange('text', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="w-full px-4 h-10 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
               placeholder="输入任务名称..."
               required
             />
@@ -125,14 +125,14 @@ export default function TaskEditor({ task, isOpen, onClose }: TaskEditorProps) {
           {/* 任务类型、父任务和视图 */}
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                <Settings className="w-4 h-4 text-blue-500" />
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-900 mb-2">
+                <Settings className="w-4 h-4 text-blue-600" />
                 任务类型
               </label>
               <Select
                 value={formData.type}
                 onChange={(e) => handleChange('type', e.target.value)}
-                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-1"
+                className="rounded-md border-gray-300 focus:border-blue-600 focus:ring-1"
               >
                 <option value="project">📁 模块/项目</option>
                 <option value="task">📋 任务</option>
@@ -140,15 +140,15 @@ export default function TaskEditor({ task, isOpen, onClose }: TaskEditorProps) {
               </Select>
             </div>
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                <Flag className="w-4 h-4 text-blue-500" />
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-900 mb-2">
+                <Flag className="w-4 h-4 text-blue-600" />
                 父任务
               </label>
               <Select
                 value={formData.parent || ''}
                 onChange={(e) => handleChange('parent', e.target.value || null)}
                 disabled={formData.type === 'project'}
-                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-1"
+                className="rounded-md border-gray-300 focus:border-blue-600 focus:ring-1"
               >
                 <option value="">🔝 无（顶级任务）</option>
                 {availableParents.map((parent) => (
@@ -159,13 +159,13 @@ export default function TaskEditor({ task, isOpen, onClose }: TaskEditorProps) {
               </Select>
             </div>
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-900 mb-2">
                 📊 视图
               </label>
               <Select
                 value={formData.view || activeView}
                 onChange={(e) => handleChange('view', e.target.value)}
-                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-1"
+                className="rounded-md border-gray-300 focus:border-blue-600 focus:ring-1"
               >
                 <option value="project">🏢 项目甘特图</option>
                 <option value="product">📦 产品甘特图</option>
@@ -175,66 +175,66 @@ export default function TaskEditor({ task, isOpen, onClose }: TaskEditorProps) {
         </div>
 
         {/* 时间安排区域 */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
+        <div className="bg-white rounded-lg border border-gray-300 p-4 mb-4">
           <div className="flex items-center gap-2 mb-3">
             <Calendar className="w-5 h-5 text-blue-600" />
-            <h3 className="text-sm font-medium text-gray-700">时间安排</h3>
+            <h3 className="text-sm font-medium text-gray-900">时间安排</h3>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                📅 开始日期 <span className="text-red-500">*</span>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-900 mb-2">
+                📅 开始日期 <span className="text-red-600">*</span>
               </label>
               <DatePicker
                 value={formData.start_date}
                 onChange={(date) => handleChange('start_date', date)}
                 required
-                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-1"
+                className="rounded-md border-gray-300 focus:border-blue-600 focus:ring-1"
               />
             </div>
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                📅 结束日期 <span className="text-red-500">*</span>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-900 mb-2">
+                📅 结束日期 <span className="text-red-600">*</span>
               </label>
               <DatePicker
                 value={formData.end_date}
                 onChange={(date) => handleChange('end_date', date)}
                 required
-                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-1"
+                className="rounded-md border-gray-300 focus:border-blue-600 focus:ring-1"
               />
             </div>
           </div>
         </div>
 
         {/* 责任与状态区域 */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
+        <div className="bg-white rounded-lg border border-gray-300 p-4 mb-4">
           <div className="flex items-center gap-2 mb-3">
             <User className="w-5 h-5 text-blue-600" />
-            <h3 className="text-sm font-medium text-gray-700">责任与状态</h3>
+            <h3 className="text-sm font-medium text-gray-900">责任与状态</h3>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-900 mb-2">
                 👤 负责人
               </label>
               <input
                 type="text"
                 value={formData.owner}
                 onChange={(e) => handleChange('owner', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full px-4 h-10 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
                 placeholder="输入负责人姓名"
               />
             </div>
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-900 mb-2">
                 📊 阶段
               </label>
               <Select
                 value={formData.phase}
                 onChange={(e) => handleChange('phase', e.target.value)}
-                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-1"
+                className="rounded-md border-gray-300 focus:border-blue-600 focus:ring-1"
               >
                 <option value="H1">📈 H1 (上半年)</option>
                 <option value="H2">📊 H2 (下半年)</option>
@@ -245,13 +245,13 @@ export default function TaskEditor({ task, isOpen, onClose }: TaskEditorProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-900 mb-2">
                 🎯 优先级
               </label>
               <Select
                 value={formData.priority}
                 onChange={(e) => handleChange('priority', e.target.value)}
-                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-1"
+                className="rounded-md border-gray-300 focus:border-blue-600 focus:ring-1"
               >
                 <option value="low">🟢 低</option>
                 <option value="medium">🟡 中</option>
@@ -259,13 +259,13 @@ export default function TaskEditor({ task, isOpen, onClose }: TaskEditorProps) {
               </Select>
             </div>
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-900 mb-2">
                 ⚡ 状态
               </label>
               <Select
                 value={formData.status}
                 onChange={(e) => handleChange('status', e.target.value)}
-                className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-1"
+                className="rounded-md border-gray-300 focus:border-blue-600 focus:ring-1"
               >
                 <option value="planned">📝 计划中</option>
                 <option value="in-progress">🚀 进行中</option>
@@ -277,19 +277,19 @@ export default function TaskEditor({ task, isOpen, onClose }: TaskEditorProps) {
         </div>
 
         {/* 进度与选项区域 */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
+        <div className="bg-white rounded-lg border border-gray-300 p-4 mb-4">
           <div className="flex items-center gap-2 mb-3">
             <AlertCircle className="w-5 h-5 text-blue-600" />
-            <h3 className="text-sm font-medium text-gray-700">进度与选项</h3>
+            <h3 className="text-sm font-medium text-gray-900">进度与选项</h3>
           </div>
 
           {/* 进度条 */}
           <div className="mb-4">
-            <label className="flex items-center justify-between text-sm font-medium text-gray-700 mb-2">
+            <label className="flex items-center justify-between text-sm font-medium text-gray-900 mb-2">
               <span className="flex items-center gap-2">
                 📊 任务进度
               </span>
-              <span className="text-2xl font-bold text-orange-600">
+              <span className="text-2xl font-bold text-yellow-500">
                 {Math.round((formData.progress || 0) * 100)}%
               </span>
             </label>
@@ -300,35 +300,35 @@ export default function TaskEditor({ task, isOpen, onClose }: TaskEditorProps) {
                 max="100"
                 value={Math.round((formData.progress || 0) * 100)}
                 onChange={(e) => handleChange('progress', parseInt(e.target.value) / 100)}
-                className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500 shadow-sm"
+                className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer shadow-sm"
                 style={{
-                  background: `linear-gradient(to right, #f97316 0%, #f97316 ${Math.round((formData.progress || 0) * 100)}%, #e5e7eb ${Math.round((formData.progress || 0) * 100)}%, #e5e7eb 100%)`
+                  background: `linear-gradient(to right, #f59e0b 0%, #f59e0b ${Math.round((formData.progress || 0) * 100)}%, #d1d5db ${Math.round((formData.progress || 0) * 100)}%, #d1d5db 100%)`
                 }}
               />
             </div>
           </div>
 
           {/* 里程碑选项 */}
-          <div className="flex items-center p-4 bg-white rounded-xl border-2 border-dashed border-orange-200 hover:border-orange-400 transition-all">
+          <div className="flex items-center p-4 bg-white rounded-xl border-2 border-dashed border-yellow-500/20 hover:border-yellow-500/50 transition-all">
             <input
               type="checkbox"
               checked={formData.is_milestone}
               onChange={(e) => handleChange('is_milestone', e.target.checked)}
-              className="w-5 h-5 text-orange-600 rounded focus:ring-orange-500 cursor-pointer"
+              className="w-5 h-5 text-yellow-500 rounded focus:ring-orange-500 cursor-pointer"
               id="is_milestone"
             />
-            <label htmlFor="is_milestone" className="ml-3 text-sm font-medium text-gray-700 cursor-pointer select-none">
-              🏆 设为里程碑 <span className="text-gray-500">(将显示为黄色菱形标记)</span>
+            <label htmlFor="is_milestone" className="ml-3 text-sm font-medium text-gray-900 cursor-pointer select-none">
+              🏆 设为里程碑 <span className="text-gray-600">(将显示为黄色菱形标记)</span>
             </label>
           </div>
         </div>
 
         {/* 依赖关系区域 */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
+        <div className="bg-white rounded-lg border border-gray-300 p-4 mb-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <LinkIcon className="w-5 h-5 text-indigo-600" />
-              <h3 className="text-sm font-medium text-gray-700">依赖关系</h3>
+              <LinkIcon className="w-5 h-5 text-blue-600" />
+              <h3 className="text-sm font-medium text-gray-900">依赖关系</h3>
             </div>
             {task && (
               <button
@@ -378,9 +378,9 @@ export default function TaskEditor({ task, isOpen, onClose }: TaskEditorProps) {
             <div className="space-y-2">
               {/* 前置依赖（该任务依赖的其他任务） */}
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">前置任务（必须先完成的任务）</h4>
+                <h4 className="text-sm font-medium text-gray-900 mb-2">前置任务（必须先完成的任务）</h4>
                 {links.filter(l => l.target === task.id).length === 0 ? (
-                  <p className="text-sm text-gray-500 italic">无前置依赖</p>
+                  <p className="text-sm text-gray-600 italic">无前置依赖</p>
                 ) : (
                   <div className="space-y-2">
                     {links
@@ -388,12 +388,12 @@ export default function TaskEditor({ task, isOpen, onClose }: TaskEditorProps) {
                       .map((link) => {
                         const sourceTask = tasks.find(t => t.id === link.source);
                         return (
-                          <div key={link.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-gray-200">
+                          <div key={link.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-gray-300">
                             <div>
-                              <span className="font-medium text-gray-800">
+                              <span className="font-medium text-gray-900">
                                 {sourceTask ? sourceTask.text : `任务 ${link.source}`}
                               </span>
-                              <span className="text-xs text-gray-500 ml-2">
+                              <span className="text-xs text-gray-600 ml-2">
                                 ({link.type === '0' ? '完成-开始' : '其他类型'})
                               </span>
                             </div>
@@ -404,7 +404,7 @@ export default function TaskEditor({ task, isOpen, onClose }: TaskEditorProps) {
                                   deleteLink(link.id);
                                 }
                               }}
-                              className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
+                              className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -417,9 +417,9 @@ export default function TaskEditor({ task, isOpen, onClose }: TaskEditorProps) {
 
               {/* 后置依赖（依赖该任务的其他任务） */}
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">后置任务（依赖此任务的任务）</h4>
+                <h4 className="text-sm font-medium text-gray-900 mb-2">后置任务（依赖此任务的任务）</h4>
                 {links.filter(l => l.source === task.id).length === 0 ? (
-                  <p className="text-sm text-gray-500 italic">无后置依赖</p>
+                  <p className="text-sm text-gray-600 italic">无后置依赖</p>
                 ) : (
                   <div className="space-y-2">
                     {links
@@ -427,12 +427,12 @@ export default function TaskEditor({ task, isOpen, onClose }: TaskEditorProps) {
                       .map((link) => {
                         const targetTask = tasks.find(t => t.id === link.target);
                         return (
-                          <div key={link.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-gray-200">
+                          <div key={link.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-gray-300">
                             <div>
-                              <span className="font-medium text-gray-800">
+                              <span className="font-medium text-gray-900">
                                 {targetTask ? targetTask.text : `任务 ${link.target}`}
                               </span>
-                              <span className="text-xs text-gray-500 ml-2">
+                              <span className="text-xs text-gray-600 ml-2">
                                 ({link.type === '0' ? '完成-开始' : '其他类型'})
                               </span>
                             </div>
@@ -443,7 +443,7 @@ export default function TaskEditor({ task, isOpen, onClose }: TaskEditorProps) {
                                   deleteLink(link.id);
                                 }
                               }}
-                              className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
+                              className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -454,35 +454,35 @@ export default function TaskEditor({ task, isOpen, onClose }: TaskEditorProps) {
                 )}
               </div>
 
-              <div className="text-xs text-gray-500 pt-2 border-t border-gray-200">
+              <div className="text-xs text-gray-600 pt-2 border-t border-gray-300">
                 提示：依赖关系类型 "0" 表示"完成-开始"（前一个任务完成后，后一个任务才能开始）
               </div>
             </div>
           ) : (
-            <p className="text-sm text-gray-500 italic">保存任务后可以添加依赖关系</p>
+            <p className="text-sm text-gray-600 italic">保存任务后可以添加依赖关系</p>
           )}
         </div>
 
         {/* 任务描述区域 */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+        <div className="bg-white rounded-lg border border-gray-300 p-4 mb-4">
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-900 mb-2">
             📝 任务描述
           </label>
           <textarea
             value={formData.description || ''}
             onChange={(e) => handleChange('description', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none"
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 resize-none transition-all duration-200"
             rows={4}
             placeholder="输入任务的详细描述、注意事项或备注..."
           />
         </div>
 
         {/* 操作按钮 */}
-        <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+        <div className="flex justify-between items-center pt-4 border-t border-gray-300">
           {/* 左侧：删除按钮（仅编辑时显示） */}
           <div>
             {task && (
-              <Button
+              <Button variant="danger"
                 type="button"
                 onClick={() => {
                   if (confirm(`确定要删除任务 "${task.text}" 吗？\n\n此操作将同时删除该任务的所有子任务，且无法撤销。`)) {
@@ -491,7 +491,7 @@ export default function TaskEditor({ task, isOpen, onClose }: TaskEditorProps) {
                     onClose();
                   }
                 }}
-                className="px-6 py-2.5 bg-red-600 text-white hover:bg-red-700 border-none"
+                className="px-6 py-2.5"
               >
                 🗑️ 删除任务
               </Button>
@@ -504,14 +504,14 @@ export default function TaskEditor({ task, isOpen, onClose }: TaskEditorProps) {
               type="button"
               onClick={onClose}
               variant="outline"
-              className="px-6 py-2.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="px-6 py-2.5"
             >
               取消
             </Button>
             <Button
               type="submit"
               variant="primary"
-              className="px-6 py-2.5 bg-blue-600 text-white hover:bg-blue-700"
+              className="px-6 py-2.5"
             >
               {task ? '✅ 更新任务' : '➕ 创建任务'}
             </Button>

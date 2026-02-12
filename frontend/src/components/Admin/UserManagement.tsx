@@ -412,7 +412,7 @@ export default function UserManagement() {
               <select
                 value={newUserData.role}
                 onChange={(e) => setNewUserData({ ...newUserData, role: e.target.value as 'admin' | 'user' })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
+                className="w-full px-4 h-10 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
               >
                 <option value="user">普通用户</option>
                 <option value="admin">管理员</option>
@@ -425,7 +425,7 @@ export default function UserManagement() {
               <select
                 value={newUserData.status}
                 onChange={(e) => setNewUserData({ ...newUserData, status: e.target.value as 'active' | 'inactive' })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
+                className="w-full px-4 h-10 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
               >
                 <option value="active">活跃</option>
                 <option value="inactive">禁用</option>

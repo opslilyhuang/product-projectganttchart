@@ -13,8 +13,8 @@ export default function Select({ className, children, ...props }: SelectProps) {
   return (
     <select
       className={clsx(
-        'w-full px-3 py-2 border border-gray-300 rounded-md',
-        'focus:border-blue-500 focus:ring-1 focus:ring-blue-500',
+        'w-full px-4 h-10 border border-gray-300 rounded-xl',
+        'focus:border-blue-500 focus:ring-2 focus:ring-blue-200',
         'disabled:bg-gray-100 disabled:cursor-not-allowed',
         'bg-white cursor-pointer',
         className
