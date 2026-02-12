@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
-import { LogIn, Mail, Lock, User, AlertCircle } from 'lucide-react';
+import { LogIn, Lock, User, AlertCircle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 

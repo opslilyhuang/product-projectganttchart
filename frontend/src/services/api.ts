@@ -2,11 +2,20 @@
  * API服务层 - 封装HTTP请求
  */
 
-import axios from 'axios';
+import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios';
+
+// 自定义Axios实例类型，响应拦截器已经解包了data
+interface CustomAxiosInstance extends Omit<AxiosInstance, 'get' | 'post' | 'put' | 'patch' | 'delete'> {
+  get<T = any, R = T, D = any>(url: string, config?: AxiosRequestConfig<D>): Promise<R>;
+  post<T = any, R = T, D = any>(url: string, data?: D, config?: AxiosRequestConfig<D>): Promise<R>;
+  put<T = any, R = T, D = any>(url: string, data?: D, config?: AxiosRequestConfig<D>): Promise<R>;
+  patch<T = any, R = T, D = any>(url: string, data?: D, config?: AxiosRequestConfig<D>): Promise<R>;
+  delete<T = any, R = T, D = any>(url: string, config?: AxiosRequestConfig<D>): Promise<R>;
+}
 
 // 创建axios实例
-const api = axios.create({
-  baseURL: 'http://localhost:3005/api',
+const api: AxiosInstance = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3005/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -29,7 +38,7 @@ api.interceptors.request.use(
 
 // 响应拦截器 - 处理错误
 api.interceptors.response.use(
-  (response) => response.data,
+  (response: AxiosResponse) => response.data,
   (error) => {
     if (error.response) {
       // 服务器返回错误状态码
@@ -52,4 +61,5 @@ api.interceptors.response.use(
   }
 );
 
-export default api;
+// 导出具有正确类型的api实例
+export default api as CustomAxiosInstance;

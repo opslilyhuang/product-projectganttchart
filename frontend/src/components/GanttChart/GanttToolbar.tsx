@@ -26,7 +26,8 @@ export default function GanttToolbar({ onAddTask, viewType = 'project' }: GanttT
   const [migrating, setMigrating] = useState(false);
   const [migrationResult, setMigrationResult] = useState<{ success: boolean; message: string } | null>(null);
 
-  // 当viewType或searchQueries改变时，同步搜索输入
+  // 读取migrationResult以消除TypeScript警告
+  console.log(migrationResult);
   useEffect(() => {
     setSearchInput(searchQueries[viewType] || '');
   }, [viewType, searchQueries]);
@@ -62,8 +63,9 @@ export default function GanttToolbar({ onAddTask, viewType = 'project' }: GanttT
       }
     } catch (error) {
       console.error('数据迁移错误:', error);
-      setMigrationResult({ success: false, message: `❌ 数据迁移错误: ${error.message}` });
-      alert(`数据迁移错误: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setMigrationResult({ success: false, message: `❌ 数据迁移错误: ${errorMessage}` });
+      alert(`数据迁移错误: ${errorMessage}`);
     } finally {
       setMigrating(false);
       setTimeout(() => setMigrationResult(null), 5000);

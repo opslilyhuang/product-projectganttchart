@@ -8,11 +8,13 @@ import { clsx } from 'clsx';
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'danger';
   size?: 'sm' | 'md' | 'lg';
+  loading?: boolean;
 }
 
 export default function Button({
   variant = 'primary',
   size = 'md',
+  loading,
   className,
   children,
   ...props
@@ -35,6 +37,7 @@ export default function Button({
   return (
     <button
       className={clsx(baseStyles, variantStyles[variant], sizeStyles[size], className)}
+      disabled={loading || props.disabled}
       {...props}
     >
       {children}

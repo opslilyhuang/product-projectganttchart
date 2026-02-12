@@ -5,7 +5,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authService } from '@/services/auth';
-import type { User, AuthState } from '@/types/auth';
+import type { AuthState } from '@/types/auth';
 
 interface AuthStore extends AuthState {
   login: (username: string, password: string) => Promise<void>;
@@ -18,7 +18,7 @@ interface AuthStore extends AuthState {
 
 export const useAuthStore = create<AuthStore>()(
   persist(
-    (set, get) => ({
+    (set, _get) => ({
       // 初始状态
       user: null,
       token: null,

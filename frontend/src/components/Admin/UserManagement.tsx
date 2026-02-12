@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { useUserStore } from '@/stores/userStore';
 import { useAuthStore } from '@/stores/authStore';
 import {
-  Users, UserPlus, Edit, Trash2, Check, X, Shield,
+  Users, UserPlus, Edit, Trash2, Shield,
   UserCheck, UserX, Lock, Unlock, AlertCircle, Search
 } from 'lucide-react';
 import Button from '@/components/ui/Button';

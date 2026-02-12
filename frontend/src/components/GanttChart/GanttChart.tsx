@@ -19,7 +19,7 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
   console.log('GanttChart rendering, onEditTask:', onEditTask, 'viewType:', viewType);
   const containerRef = useRef<HTMLDivElement>(null);
   const initializedRef = useRef(false);
-  const { tasks, links, config, updateTask, deleteTask, getTasksByView, getFilteredTasksByView, searchQueries } = useGanttStore();
+  const { tasks, links, config, updateTask, deleteTask, getFilteredTasksByView, searchQueries } = useGanttStore();
   const [isInitialized, setIsInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -109,15 +109,15 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
           text: ganttTask.text,
           start_date: gantt.date.date_to_str('%Y-%m-%d')(ganttTask.start_date),
           end_date: gantt.date.date_to_str('%Y-%m-%d')(ganttTask.end_date),
-          duration: ganttTask.duration,
-          progress: ganttTask.progress,
-          type: ganttTask.type || 'task',
-          parent: ganttTask.parent || null,
+          duration: ganttTask.duration ?? 1,
+          progress: ganttTask.progress ?? 0,
+          type: (ganttTask.type === 'project' || ganttTask.type === 'subtask' ? ganttTask.type : 'task') as 'project' | 'task' | 'subtask',
+          parent: ganttTask.parent ? String(ganttTask.parent) : null,
           owner: ganttTask.owner || '',
           is_milestone: ganttTask.is_milestone || false,
-          phase: ganttTask.phase || 'H1',
-          priority: ganttTask.priority || 'medium',
-          status: ganttTask.status || 'planned',
+          phase: (ganttTask.phase === 'H1' || ganttTask.phase === 'H2' ? ganttTask.phase : 'H1') as 'H1' | 'H2' | 'custom',
+          priority: (ganttTask.priority === 'low' || ganttTask.priority === 'high' ? ganttTask.priority : 'medium') as 'low' | 'medium' | 'high',
+          status: (ganttTask.status === 'in-progress' || ganttTask.status === 'completed' || ganttTask.status === 'blocked' ? ganttTask.status : 'planned') as 'planned' | 'in-progress' | 'completed' | 'blocked',
           description: ganttTask.description || '',
         };
         console.log('✅ 准备调用onEditTask，任务:', task);
@@ -289,17 +289,19 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
 
       // 时间预警样式
       try {
-        const endDate = new Date(task.end_date);
-        const today = new Date();
-        const timeDiff = endDate.getTime() - today.getTime();
-        const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+        if (task.end_date) {
+          const endDate = new Date(task.end_date);
+          const today = new Date();
+          const timeDiff = endDate.getTime() - today.getTime();
+          const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
 
-        if (daysDiff < 0) {
-          // 已超期
-          className += 'gantt-overdue ';
-        } else if (daysDiff <= 7) {
-          // 距离结束日期1周内
-          className += 'gantt-near-deadline ';
+          if (daysDiff < 0) {
+            // 已超期
+            className += 'gantt-overdue ';
+          } else if (daysDiff <= 7) {
+            // 距离结束日期1周内
+            className += 'gantt-near-deadline ';
+          }
         }
       } catch (error) {
         // 日期解析失败，忽略
@@ -347,17 +349,17 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
       updateTask(String(id), {
         start_date: gantt.date.date_to_str('%Y-%m-%d')(task.start_date),
         end_date: gantt.date.date_to_str('%Y-%m-%d')(task.end_date),
-        duration: task.duration,
-        progress: task.progress,
-        text: task.text,
-        owner: task.owner,
-        type: task.type,
-        parent: task.parent,
-        is_milestone: task.is_milestone,
-        phase: task.phase,
-        priority: task.priority,
-        status: task.status,
-        description: task.description,
+        duration: task.duration ?? 1,
+        progress: task.progress ?? 0,
+        text: task.text || '',
+        owner: task.owner || '',
+        type: (task.type === 'project' || task.type === 'subtask' ? task.type : 'task') as 'project' | 'task' | 'subtask',
+        parent: task.parent ? String(task.parent) : null,
+        is_milestone: task.is_milestone || false,
+        phase: (task.phase === 'H1' || task.phase === 'H2' ? task.phase : 'H1') as 'H1' | 'H2' | 'custom',
+        priority: (task.priority === 'low' || task.priority === 'high' ? task.priority : 'medium') as 'low' | 'medium' | 'high',
+        status: (task.status === 'in-progress' || task.status === 'completed' || task.status === 'blocked' ? task.status : 'planned') as 'planned' | 'in-progress' | 'completed' | 'blocked',
+        description: task.description || '',
       });
       return true;
     });
@@ -383,15 +385,15 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
           text: ganttTask.text,
           start_date: gantt.date.date_to_str('%Y-%m-%d')(ganttTask.start_date),
           end_date: gantt.date.date_to_str('%Y-%m-%d')(ganttTask.end_date),
-          duration: ganttTask.duration,
-          progress: ganttTask.progress,
-          type: ganttTask.type || 'task',
-          parent: ganttTask.parent || null,
+          duration: ganttTask.duration ?? 1,
+          progress: ganttTask.progress ?? 0,
+          type: (ganttTask.type === 'project' || ganttTask.type === 'subtask' ? ganttTask.type : 'task') as 'project' | 'task' | 'subtask',
+          parent: ganttTask.parent ? String(ganttTask.parent) : null,
           owner: ganttTask.owner || '',
           is_milestone: ganttTask.is_milestone || false,
-          phase: ganttTask.phase || 'H1',
-          priority: ganttTask.priority || 'medium',
-          status: ganttTask.status || 'planned',
+          phase: (ganttTask.phase === 'H1' || ganttTask.phase === 'H2' ? ganttTask.phase : 'H1') as 'H1' | 'H2' | 'custom',
+          priority: (ganttTask.priority === 'low' || ganttTask.priority === 'high' ? ganttTask.priority : 'medium') as 'low' | 'medium' | 'high',
+          status: (ganttTask.status === 'in-progress' || ganttTask.status === 'completed' || ganttTask.status === 'blocked' ? ganttTask.status : 'planned') as 'planned' | 'in-progress' | 'completed' | 'blocked',
           description: ganttTask.description || '',
         };
         console.log('✅ 打开自定义编辑器');
@@ -416,15 +418,15 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
           text: ganttTask.text,
           start_date: gantt.date.date_to_str('%Y-%m-%d')(ganttTask.start_date),
           end_date: gantt.date.date_to_str('%Y-%m-%d')(ganttTask.end_date),
-          duration: ganttTask.duration,
-          progress: ganttTask.progress,
-          type: ganttTask.type || 'task',
-          parent: ganttTask.parent || null,
+          duration: ganttTask.duration ?? 1,
+          progress: ganttTask.progress ?? 0,
+          type: (ganttTask.type === 'project' || ganttTask.type === 'subtask' ? ganttTask.type : 'task') as 'project' | 'task' | 'subtask',
+          parent: ganttTask.parent ? String(ganttTask.parent) : null,
           owner: ganttTask.owner || '',
           is_milestone: ganttTask.is_milestone || false,
-          phase: ganttTask.phase || 'H1',
-          priority: ganttTask.priority || 'medium',
-          status: ganttTask.status || 'planned',
+          phase: (ganttTask.phase === 'H1' || ganttTask.phase === 'H2' ? ganttTask.phase : 'H1') as 'H1' | 'H2' | 'custom',
+          priority: (ganttTask.priority === 'low' || ganttTask.priority === 'high' ? ganttTask.priority : 'medium') as 'low' | 'medium' | 'high',
+          status: (ganttTask.status === 'in-progress' || ganttTask.status === 'completed' || ganttTask.status === 'blocked' ? ganttTask.status : 'planned') as 'planned' | 'in-progress' | 'completed' | 'blocked',
           description: ganttTask.description || '',
         };
         console.log('✅ Calling onEditTask with task:', task);

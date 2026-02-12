@@ -25,7 +25,7 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:3004', 'http://localhost:3007'],
+    origin: ['http://localhost:3004', 'http://localhost:3007', 'http://59.110.21.174:3004'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
   },
 });
@@ -35,7 +35,7 @@ db.pragma('foreign_keys = ON');
 
 // 中间件
 app.use(cors({
-  origin: ['http://localhost:3004', 'http://localhost:3007'],
+  origin: ['http://localhost:3004', 'http://localhost:3007', 'http://59.110.21.174:3004'],
   credentials: true,
 }));
 app.use(express.json());

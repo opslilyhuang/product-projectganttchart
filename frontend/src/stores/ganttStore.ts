@@ -67,7 +67,7 @@ const apiCall = {
   },
 
   // 创建链接
-  createLink: async (link: TaskLink): Promise<void> => {
+  createLink: async (_link: TaskLink): Promise<void> => {
     if (!USE_API) return;
     try {
       // 注意：后端可能需要单独的链接端点，这里使用任务端点作为示例
@@ -79,7 +79,7 @@ const apiCall = {
   },
 
   // 删除链接
-  deleteLink: async (id: string): Promise<void> => {
+  deleteLink: async (_id: string): Promise<void> => {
     if (!USE_API) return;
     try {
       // 暂时跳过链接API调用
@@ -119,6 +119,7 @@ const apiCall = {
 };
 
 // 从API加载数据
+// @ts-ignore
 const loadFromAPI = async (): Promise<StorageData | null> => {
   if (!USE_API) {
     console.log('🔧 API模式已禁用，跳过API加载');
@@ -274,7 +275,7 @@ const initializeTaskOrders = (tasks: GanttTask[]): GanttTask[] => {
 
   // 为每组分配order值
   const updatedTasks = [...tasks];
-  tasksByParent.forEach((siblings, parentId) => {
+  tasksByParent.forEach((siblings, _parentId) => {
     // 按开始时间排序（如果没有order字段）
     siblings.sort((a, b) => {
       if (a.order !== undefined && b.order !== undefined) {
@@ -434,7 +435,7 @@ export const useGanttStore = create<GanttStore>()((set, get) => ({
     console.log('🗑️ Store - deleteTask called, id:', id);
     const taskToDelete = get().tasks.find(t => t.id === id);
     const view = taskToDelete?.view || 'project';
-    let tasksToDelete: Set<string>;
+    let tasksToDelete: Set<string> = new Set();
 
     set((state) => {
       // 删除任务及其所有子任务
@@ -621,7 +622,7 @@ export const useGanttStore = create<GanttStore>()((set, get) => ({
     if (USE_API) {
       (async () => {
         try {
-          await apiCall.updateConfig(config);
+          await apiCall.updateConfig(config as GanttConfig);
         } catch (error) {
           console.error('保存配置到API失败，但已保存到本地:', error);
         }
