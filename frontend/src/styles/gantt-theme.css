@@ -251,3 +251,37 @@
 .gantt-overdue.gantt-near-deadline .gantt_task_progress {
   background-color: #dc2626 !important;
 }
+
+/* 操作按钮列样式 - 确保按钮在最上层可点击 */
+.gantt_cell[data-column-name="actions"],
+.gantt_grid_head .gantt_column_head_wrap[data-column-name="actions"] {
+  position: relative;
+  z-index: 100 !important;
+}
+
+/* 操作按钮样式 */
+.move-up-btn,
+.move-down-btn,
+.edit-task-btn,
+.delete-task-btn {
+  position: relative !important;
+  z-index: 101 !important;
+  pointer-events: auto !important;
+}
+
+/* 确保按钮容器也有足够高的层级 */
+.gantt_cell[data-column-name="actions"] > div {
+  position: relative;
+  z-index: 100;
+}
+
+/* 防止其他元素遮挡操作按钮 */
+.gantt_task_row,
+.gantt_grid_data .gantt_row {
+  position: relative;
+}
+
+/* 确保操作列不被覆盖 */
+.gantt_cell[data-column-name="actions"] {
+  overflow: visible !important;
+}

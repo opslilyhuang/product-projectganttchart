@@ -235,12 +235,12 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
         width: 140,
         template: (task: any) => {
           return `
-            <div style="display: flex; gap: 4px; justify-content: center;">
+            <div style="display: flex; gap: 4px; justify-content: center; position: relative; z-index: 100;">
               <button
                 class="move-up-btn"
                 data-task-id="${task.id}"
                 title="上移"
-                style="padding: 4px 8px; font-size: 12px; background: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; min-width: 32px;"
+                style="padding: 4px 8px; font-size: 12px; background: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; min-width: 32px; position: relative; z-index: 101;"
               >
                 ↑
               </button>
@@ -248,7 +248,7 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
                 class="move-down-btn"
                 data-task-id="${task.id}"
                 title="下移"
-                style="padding: 4px 8px; font-size: 12px; background: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; min-width: 32px;"
+                style="padding: 4px 8px; font-size: 12px; background: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; min-width: 32px; position: relative; z-index: 101;"
               >
                 ↓
               </button>
@@ -256,7 +256,7 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
                 class="edit-task-btn"
                 data-task-id="${task.id}"
                 title="编辑"
-                style="padding: 4px 10px; font-size: 12px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;"
+                style="padding: 4px 10px; font-size: 12px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; position: relative; z-index: 101;"
               >
                 编
               </button>
@@ -264,7 +264,7 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
                 class="delete-task-btn"
                 data-task-id="${task.id}"
                 title="删除"
-                style="padding: 4px 10px; font-size: 12px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;"
+                style="padding: 4px 10px; font-size: 12px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; position: relative; z-index: 101;"
               >
                 删
               </button>
