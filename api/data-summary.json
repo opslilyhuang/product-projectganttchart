@@ -1,0 +1,17 @@
+{
+  "version": "v4-final",
+  "timestamp": "2026-02-24T11:43:56.881Z",
+  "tasks": 128,
+  "links": 0,
+  "users": 4,
+  "viewerUser": {
+    "id": 7,
+    "username": "viewer",
+    "email": "viewer@example.com",
+    "full_name": "查看用户",
+    "role": "user",
+    "status": "active",
+    "can_edit": 0
+  },
+  "exportDate": "2026-02-24T11:43:56.882Z"
+}
