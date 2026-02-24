@@ -1,13 +1,13 @@
 # 数据和代码同步报告
 
 ## 📅 同步时间
-2024年2月24日 19:47
+2026年2月24日 20:25
 
 ## ✅ Git同步状态
 
 ### 远程仓库
 - **仓库地址**: `git@github.com:opslilyhuang/product-projectganttchart.git`
-- **最新提交**: `e2927b2`
+- **最新提交**: `4444c8a`
 - **分支**: `main`
 - **状态**: ✅ 完全同步
 
@@ -20,7 +20,7 @@
 
 ### 本地数据库 (api/gantt.db)
 ```
-✅ 任务数量: 128个
+✅ 任务数量: 77个产品任务
 ✅ 用户数量: 4个
 ✅ 链接数量: 0个
 ```
@@ -33,22 +33,27 @@
 | **viewer** | **viewonly123** | **只读** | **用户** |
 | (其他) | - | - | - |
 
+### 智能问数助手任务（已验证）
+| 序号 | 任务名称 | 负责人 |
+|------|----------|--------|
+| 1 | 本体建模 | 黄韵文 |
+| 2 | 数据接入和编排 | 孙攀 |
+| 3 | 应用搭建 | 黄宇萌 |
+| 4 | 用户权限体系联调 | 黄宇萌 欧阳军 |
+| 5 | 测试应用搭建 | 黄宇萌 |
+| 6 | 试运行启动 | 产品/交付 |
+
 ## 🌐 云服务器状态
 
 ### 服务器信息
 - **地址**: 59.110.21.174
-- **前端**: http://59.110.21.174:3004/ (运行中)
-- **后端**: http://59.110.21.174:3005/ (运行中)
+- **前端**: http://59.110.21.174:3004/ ✅ 运行中
+- **后端**: http://59.110.21.174:3005/ ✅ 运行中
 
 ### 云服务器数据库
-- ✅ 128个任务已同步
+- ✅ 77个产品任务已同步
+- ✅ 智能问数助手任务顺序已验证
 - ✅ viewer用户已配置（只读权限）
-
-## 📦 已提交的备份文件
-
-1. **local-data-snapshot.json** - 完整数据快照（api/local-data-snapshot.json）
-2. **data-summary.json** - 数据摘要
-3. **api/data-summary.json** - 数据摘要（api目录）
 
 ## 🎯 功能验证清单
 
@@ -59,6 +64,8 @@
 - ✅ 任务筛选（多选）
 - ✅ 结束日期图例弹窗
 - ✅ 只读用户viewer/viewonly123
+- ✅ 智能问数助手任务包含"测试应用搭建"（不是"正式应用搭建"）
+- ✅ 没有错误的"应用迁移至正式环境"任务
 
 ### 默认设置
 - 默认视图: 产品甘特图
@@ -73,27 +80,40 @@
 ## 📝 同步命令历史
 
 ```bash
-# 最新git提交
-git commit -m "backup: 本地数据库完整快照"
+# Git提交
+git add frontend/src/components/GanttChart/GanttChart.tsx frontend/src/styles/gantt-theme.css api/*.js
+git commit -m "fix: 同步本地数据到Git和云服务器"
 git push origin main
 
 # 前端构建
 cd frontend && npm run build
 
-# 数据库状态
-cd api
-node -e "检查viewer用户"
+# 打包部署文件
+tar -czf dist-deploy.tar.gz -C frontend/dist .
+tar -czf gantt.db.tar.gz -C api gantt.db
+
+# 上传到云服务器
+scp dist-deploy.tar.gz gantt.db.tar.gz root@59.110.21.174:/root/product-gantt/
+
+# 部署到云服务器
+ssh root@59.110.21.174
+cd /root/ai-gantt-chart
+tar -xzf /root/product-gantt/dist-deploy.tar.gz -C frontend/dist
+tar -xzf /root/product-gantt/gantt.db.tar.gz -C api
+pm2 restart gantt-api gantt-frontend
 ```
 
 ## ✅ 确认清单
 
 - ✅ Git代码已同步
 - ✅ 本地前端已构建
-- ✅ 本地数据库包含128个任务
+- ✅ 本地数据库包含77个产品任务（从前端localStorage导入）
 - ✅ 本地viewer用户配置正确
 - ✅ 云服务器已部署最新版本
 - ✅ 云服务器viewer用户配置正确
-- ✅ 数据备份已提交到Git
+- ✅ 云服务器数据已验证（智能问数助手任务顺序正确）
+- ✅ 智能问数助手包含"测试应用搭建"任务
+- ✅ 没有错误的"应用迁移至正式环境"任务
 
 ## 🔄 如何验证同步
 
@@ -128,5 +148,6 @@ git status
 
 ---
 
-**同步完成时间**: 2024-02-24 19:47
+**同步完成时间**: 2026-02-24 20:25
 **同步状态**: ✅ 所有环境已完全同步
+**数据来源**: 前端localStorage（用户确认的正确版本）
