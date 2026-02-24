@@ -149,19 +149,39 @@
   text-overflow: ellipsis !important;
   line-height: 1.5 !important;
   max-width: 350px; /* 匹配列宽 */
+  position: relative;
 }
 
-/* 悬停时显示完整任务名称 */
-.gantt_cell[data-column-name="text"]:hover,
-.gantt_tree_content:hover {
+/* 悬停时显示完整任务名称 - 使用title属性和伪元素 */
+.gantt_cell[data-column-name="text"][title]:hover::after,
+.gantt_tree_content[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  left: 0;
+  top: 100%;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: normal;
+  max-width: 400px;
+  word-wrap: break-word;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  margin-top: 4px;
+}
+
+/* 负责人列悬停显示 */
+.gantt_cell[data-column-name="owner"]:hover {
   overflow: visible !important;
   white-space: normal !important;
-  word-wrap: break-word !important;
   background: white;
-  z-index: 1000;
-  position: relative;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  max-width: none !important;
+  z-index: 10000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 8px 12px !important;
+  border-radius: 4px;
 }
 
 /* 任务状态样式 - 任务条颜色 */
@@ -256,23 +276,42 @@
 .gantt_cell[data-column-name="actions"],
 .gantt_grid_head .gantt_column_head_wrap[data-column-name="actions"] {
   position: relative;
-  z-index: 100 !important;
+  z-index: 1000 !important;
 }
 
-/* 操作按钮样式 */
+/* 新版操作按钮样式 */
+.action-btn {
+  position: relative !important;
+  z-index: 1001 !important;
+  pointer-events: auto !important;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* 旧版操作按钮样式（兼容性） */
 .move-up-btn,
 .move-down-btn,
 .edit-task-btn,
 .delete-task-btn {
   position: relative !important;
-  z-index: 101 !important;
+  z-index: 1001 !important;
   pointer-events: auto !important;
+}
+
+/* 操作按钮容器 */
+.gantt-actions-cell {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 1000 !important;
+  background: white !important;
 }
 
 /* 确保按钮容器也有足够高的层级 */
 .gantt_cell[data-column-name="actions"] > div {
   position: relative;
-  z-index: 100;
+  z-index: 1000;
 }
 
 /* 防止其他元素遮挡操作按钮 */
