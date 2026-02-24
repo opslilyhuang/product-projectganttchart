@@ -143,6 +143,10 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
     gantt.config.drag_grid = true; // 启用网格调整
     gantt.config.grid_resize = true; // 启用列宽调整
 
+    // 禁止在网格区域拖动任务（只在时间轴区域可以拖动）
+    gantt.config.drag_task = true; // 允许拖动任务
+    gantt.config.drag_project = true; // 允许拖动项目
+
     // 列配置
     gantt.config.columns = [
       {
@@ -235,40 +239,52 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
         width: 140,
         template: (task: any) => {
           return `
-            <div style="display: flex; gap: 4px; justify-content: center; position: relative; z-index: 100;" onclick="event.stopPropagation();">
+            <div class="gantt-actions-cell" style="
+              display: flex;
+              gap: 4px;
+              justify-content: center;
+              position: relative;
+              z-index: 100;
+              pointer-events: auto;
+              background: white;
+            ">
               <button
                 class="move-up-btn"
                 data-task-id="${task.id}"
+                data-action="move-up"
                 title="上移"
-                onclick="event.preventDefault(); event.stopPropagation(); window.ganttMoveTask && window.ganttMoveTask('${task.id}', 'up');"
-                style="padding: 4px 8px; font-size: 12px; background: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; min-width: 32px; position: relative; z-index: 101;"
+                onclick="event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation(); window.ganttMoveTask && window.ganttMoveTask('${task.id}', 'up'); return false;"
+                style="padding: 4px 8px; font-size: 12px; background: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; min-width: 32px; position: relative; z-index: 101; pointer-events: auto;"
               >
                 ↑
               </button>
               <button
                 class="move-down-btn"
                 data-task-id="${task.id}"
+                data-action="move-down"
                 title="下移"
-                onclick="event.preventDefault(); event.stopPropagation(); window.ganttMoveTask && window.ganttMoveTask('${task.id}', 'down');"
-                style="padding: 4px 8px; font-size: 12px; background: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; min-width: 32px; position: relative; z-index: 101;"
+                onclick="event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation(); window.ganttMoveTask && window.ganttMoveTask('${task.id}', 'down'); return false;"
+                style="padding: 4px 8px; font-size: 12px; background: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; min-width: 32px; position: relative; z-index: 101; pointer-events: auto;"
               >
                 ↓
               </button>
               <button
                 class="edit-task-btn"
                 data-task-id="${task.id}"
+                data-action="edit"
                 title="编辑"
-                onclick="event.preventDefault(); event.stopPropagation(); window.ganttEditTask && window.ganttEditTask('${task.id}');"
-                style="padding: 4px 10px; font-size: 12px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; position: relative; z-index: 101;"
+                onclick="event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation(); window.ganttEditTask && window.ganttEditTask('${task.id}'); return false;"
+                style="padding: 4px 10px; font-size: 12px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; position: relative; z-index: 101; pointer-events: auto;"
               >
                 编
               </button>
               <button
                 class="delete-task-btn"
                 data-task-id="${task.id}"
+                data-action="delete"
                 title="删除"
-                onclick="event.preventDefault(); event.stopPropagation(); if(confirm('确定要删除此任务吗？')) { window.ganttDeleteTask && window.ganttDeleteTask('${task.id}'); }"
-                style="padding: 4px 10px; font-size: 12px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; position: relative; z-index: 101;"
+                onclick="event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation(); if(confirm('确定要删除此任务吗？')) { window.ganttDeleteTask && window.ganttDeleteTask('${task.id}'); } return false;"
+                style="padding: 4px 10px; font-size: 12px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; position: relative; z-index: 101; pointer-events: auto;"
               >
                 删
               </button>
@@ -497,6 +513,7 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
           editBtn ? '编辑' : '删除');
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
 
         const taskId = (moveUpBtn || moveDownBtn || editBtn || deleteBtn)?.getAttribute('data-task-id');
         console.log('任务ID:', taskId);
@@ -594,8 +611,24 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
       }
     };
 
+    // 阻止操作列上的拖拽事件
+    const handleMouseDown = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const actionsCell = target.closest('.gantt_cell[data-column-name="actions"]') as HTMLElement;
+      const actionButton = target.closest('.move-up-btn, .move-down-btn, .edit-task-btn, .delete-task-btn') as HTMLElement;
+
+      if (actionsCell || actionButton) {
+        console.log('🚫 阻止操作列的拖拽事件');
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        return false;
+      }
+    };
+
     // 添加事件监听器
     containerRef.current?.addEventListener('click', handleButtonClick);
+    containerRef.current?.addEventListener('mousedown', handleMouseDown, true); // 使用捕获阶段
 
     // 确认事件处理器已注册
     console.log('📋 所有事件处理器已注册:');
@@ -764,6 +797,7 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
       if (beforeLightboxHandler) gantt.detachEvent(beforeLightboxHandler);
       if (taskDblClickHandler) gantt.detachEvent(taskDblClickHandler);
       containerRef.current?.removeEventListener('click', handleButtonClick);
+      containerRef.current?.removeEventListener('mousedown', handleMouseDown, true);
       containerRef.current?.removeEventListener('click', handleLegendClick);
 
       // 清理全局函数

@@ -285,3 +285,42 @@
 .gantt_cell[data-column-name="actions"] {
   overflow: visible !important;
 }
+
+/* 操作列单元格 - 禁止甘特图拖拽事件 */
+.gantt_cell[data-column-name="actions"],
+.gantt_grid_data .gantt_row > .gantt_cell[data-column-name="actions"] {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 100 !important;
+}
+
+/* 操作列单元格内的按钮容器 */
+.gantt-actions-cell {
+  pointer-events: auto !important;
+  user-select: none;
+}
+
+/* 确保操作按钮不响应甘特图的鼠标事件 */
+.move-up-btn,
+.move-down-btn,
+.edit-task-btn,
+.delete-task-btn {
+  position: relative !important;
+  z-index: 101 !important;
+  pointer-events: auto !important;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* 防止操作列被甘特图任务行覆盖 */
+.gantt_grid_data .gantt_row {
+  position: relative;
+  z-index: 1;
+}
+
+.gantt_cell[data-column-name="actions"] {
+  z-index: 100 !important;
+  background: white;
+}
