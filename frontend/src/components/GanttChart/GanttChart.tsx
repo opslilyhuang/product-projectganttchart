@@ -235,11 +235,12 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
         width: 140,
         template: (task: any) => {
           return `
-            <div style="display: flex; gap: 4px; justify-content: center; position: relative; z-index: 100;">
+            <div style="display: flex; gap: 4px; justify-content: center; position: relative; z-index: 100;" onclick="event.stopPropagation();">
               <button
                 class="move-up-btn"
                 data-task-id="${task.id}"
                 title="上移"
+                onclick="event.preventDefault(); event.stopPropagation(); window.ganttMoveTask && window.ganttMoveTask('${task.id}', 'up');"
                 style="padding: 4px 8px; font-size: 12px; background: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; min-width: 32px; position: relative; z-index: 101;"
               >
                 ↑
@@ -248,6 +249,7 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
                 class="move-down-btn"
                 data-task-id="${task.id}"
                 title="下移"
+                onclick="event.preventDefault(); event.stopPropagation(); window.ganttMoveTask && window.ganttMoveTask('${task.id}', 'down');"
                 style="padding: 4px 8px; font-size: 12px; background: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; min-width: 32px; position: relative; z-index: 101;"
               >
                 ↓
@@ -256,6 +258,7 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
                 class="edit-task-btn"
                 data-task-id="${task.id}"
                 title="编辑"
+                onclick="event.preventDefault(); event.stopPropagation(); window.ganttEditTask && window.ganttEditTask('${task.id}');"
                 style="padding: 4px 10px; font-size: 12px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; position: relative; z-index: 101;"
               >
                 编
@@ -264,6 +267,7 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
                 class="delete-task-btn"
                 data-task-id="${task.id}"
                 title="删除"
+                onclick="event.preventDefault(); event.stopPropagation(); if(confirm('确定要删除此任务吗？')) { window.ganttDeleteTask && window.ganttDeleteTask('${task.id}'); }"
                 style="padding: 4px 10px; font-size: 12px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; position: relative; z-index: 101;"
               >
                 删
@@ -600,6 +604,64 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
     console.log('  - beforeLightboxHandler:', !!beforeLightboxHandler);
     console.log('  - taskDblClickHandler:', !!taskDblClickHandler);
 
+    // 创建全局函数供按钮直接调用
+    (window as any).ganttMoveTask = (taskId: string, direction: 'up' | 'down') => {
+      console.log('🌐 全局函数调用 ganttMoveTask:', taskId, direction);
+      const moveCallback = onTaskMoveRef.current;
+      if (moveCallback) {
+        moveCallback(taskId, direction);
+
+        // 延迟重新渲染甘特图以显示新的排序
+        setTimeout(() => {
+          const currentTasks = filteredTasksRef.current;
+          const sortedTasks = [...currentTasks].sort((a, b) => {
+            const orderA = a.order || 0;
+            const orderB = b.order || 0;
+            return orderA - orderB;
+          });
+          const currentLinks = linksRef.current;
+          gantt.clearAll();
+          gantt.parse({ data: sortedTasks, links: currentLinks.filter(link =>
+            currentTasks.some(t => t.id === link.source) && currentTasks.some(t => t.id === link.target)
+          )});
+          console.log('✅ 甘特图已重新渲染');
+        }, 100);
+      }
+    };
+
+    (window as any).ganttEditTask = (taskId: string) => {
+      console.log('🌐 全局函数调用 ganttEditTask:', taskId);
+      const ganttTask = gantt.getTask(taskId);
+      const editCallback = onEditTaskRef.current;
+      if (ganttTask && editCallback) {
+        const task: GanttTask = {
+          id: String(ganttTask.id),
+          text: ganttTask.text,
+          start_date: gantt.date.date_to_str('%Y-%m-%d')(ganttTask.start_date),
+          end_date: gantt.date.date_to_str('%Y-%m-%d')(ganttTask.end_date),
+          duration: ganttTask.duration ?? 1,
+          progress: ganttTask.progress ?? 0,
+          type: (ganttTask.type === 'project' || ganttTask.type === 'subtask' ? ganttTask.type : 'task') as 'project' | 'task' | 'subtask',
+          parent: ganttTask.parent ? String(ganttTask.parent) : null,
+          owner: ganttTask.owner || '',
+          is_milestone: ganttTask.is_milestone || false,
+          phase: (ganttTask.phase === 'H1' || ganttTask.phase === 'H2' ? ganttTask.phase : 'H1') as 'H1' | 'H2' | 'custom',
+          priority: (ganttTask.priority === 'low' || ganttTask.priority === 'high' ? ganttTask.priority : 'medium') as 'low' | 'medium' | 'high',
+          status: (ganttTask.status === 'in-progress' || ganttTask.status === 'completed' || ganttTask.status === 'blocked' ? ganttTask.status : 'planned') as 'planned' | 'in-progress' | 'completed' | 'blocked',
+          description: ganttTask.description || '',
+        };
+        editCallback(task);
+      }
+    };
+
+    (window as any).ganttDeleteTask = (taskId: string) => {
+      console.log('🌐 全局函数调用 ganttDeleteTask:', taskId);
+      const deleteCallback = deleteTaskRef.current;
+      if (deleteCallback) {
+        deleteCallback(taskId);
+      }
+    };
+
     // 添加结束日期图例点击事件
     const handleLegendClick = (e: Event) => {
       const target = e.target as HTMLElement;
@@ -703,17 +765,28 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
       if (taskDblClickHandler) gantt.detachEvent(taskDblClickHandler);
       containerRef.current?.removeEventListener('click', handleButtonClick);
       containerRef.current?.removeEventListener('click', handleLegendClick);
+
+      // 清理全局函数
+      delete (window as any).ganttMoveTask;
+      delete (window as any).ganttEditTask;
+      delete (window as any).ganttDeleteTask;
     };
   }, [isInitialized]);
 
   // 使用ref保存最新的filteredTasks和links
   const filteredTasksRef = useRef(filteredTasks);
   const linksRef = useRef(links);
+  const onTaskMoveRef = useRef(onTaskMove);
+  const onEditTaskRef = useRef(onEditTask);
+  const deleteTaskRef = useRef(deleteTask);
 
   useEffect(() => {
     filteredTasksRef.current = filteredTasks;
     linksRef.current = links;
-  }, [filteredTasks, links]);
+    onTaskMoveRef.current = onTaskMove;
+    onEditTaskRef.current = onEditTask;
+    deleteTaskRef.current = deleteTask;
+  }, [filteredTasks, links, onTaskMove, onEditTask, deleteTask]);
 
   // 更新数据
   useEffect(() => {
