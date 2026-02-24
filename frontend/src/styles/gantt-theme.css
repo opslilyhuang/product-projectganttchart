@@ -363,3 +363,44 @@
   z-index: 100 !important;
   background: white;
 }
+
+/* 启用列宽调整手柄 */
+.gantt_grid_head_cell {
+  position: relative !important;
+}
+
+.gantt_grid_column_resize_wrap {
+  position: absolute !important;
+  right: -4px;
+  top: 0;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize !important;
+  z-index: 1000 !important;
+  pointer-events: auto !important;
+}
+
+.gantt_grid_column_resize_wrap:hover {
+  background-color: rgba(59, 130, 246, 0.3);
+}
+
+/* 确保表头可以被点击和拖拽 */
+.gantt_grid_scale {
+  pointer-events: auto !important;
+}
+
+.gantt_grid_scale .gantt_grid_head_cell {
+  pointer-events: auto !important;
+  cursor: default;
+}
+
+/* 网格分隔线（整体网格和时间轴分隔） */
+.gantt_grid_resize_area {
+  cursor: col-resize !important;
+  background-color: transparent;
+  z-index: 1000 !important;
+}
+
+.gantt_grid_resize_area:hover {
+  background-color: rgba(59, 130, 246, 0.2);
+}

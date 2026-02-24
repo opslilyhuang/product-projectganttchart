@@ -23,6 +23,18 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
   const [isInitialized, setIsInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // 使用 ref 保存回调函数的最新引用，解决闭包问题
+  const onEditTaskRef = useRef(onEditTask);
+  const onTaskMoveRef = useRef(onTaskMove);
+  const deleteTaskRef = useRef(deleteTask);
+
+  // 每次渲染时更新 ref
+  useEffect(() => {
+    onEditTaskRef.current = onEditTask;
+    onTaskMoveRef.current = onTaskMove;
+    deleteTaskRef.current = deleteTask;
+  });
+
   // 根据viewType过滤任务（包括搜索过滤）
   const filteredTasks = useMemo(() => {
     const tasks = getFilteredTasksByView(viewType);
@@ -425,7 +437,7 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
       }, 0);
 
       const ganttTask = gantt.getTask(id);
-      if (ganttTask && onEditTask) {
+      if (ganttTask && onEditTaskRef.current) {
         const task: GanttTask = {
           id: String(ganttTask.id),
           text: ganttTask.text,
@@ -443,7 +455,7 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
           description: ganttTask.description || '',
         };
         console.log('✅ 打开自定义编辑器');
-        onEditTask(task);
+        onEditTaskRef.current(task);
       }
       return false; // 阻止默认lightbox
     });
@@ -451,13 +463,13 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
     // 双击任务打开编辑器
     const taskDblClickHandler = gantt.attachEvent('onTaskDblClick', (id, e) => {
       console.log('🎯 Task double clicked!!! id:', id, 'event:', e);
-      console.log('onEditTask callback exists?', !!onEditTask);
+      console.log('onEditTask callback exists?', !!onEditTaskRef.current);
 
       // 从gantt实例获取最新的任务数据
       const ganttTask = gantt.getTask(id);
       console.log('Gantt task data:', ganttTask);
 
-      if (ganttTask && onEditTask) {
+      if (ganttTask && onEditTaskRef.current) {
         // 转换为我们的GanttTask格式
         const task: GanttTask = {
           id: String(ganttTask.id),
@@ -476,9 +488,9 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
           description: ganttTask.description || '',
         };
         console.log('✅ Calling onEditTask with task:', task);
-        onEditTask(task);
+        onEditTaskRef.current(task);
       } else {
-        console.log('❌ Cannot open editor: ganttTask=', ganttTask, 'onEditTask=', onEditTask);
+        console.log('❌ Cannot open editor: ganttTask=', ganttTask, 'onEditTaskRef.current=', onEditTaskRef.current);
       }
       return false; // 阻止DHTMLX默认的双击行为
     });
@@ -515,13 +527,12 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
           return false;
         }
 
-        // 执行相应的操作
+        // 执行相应的操作 - 使用 ref 获取最新的回调函数
         switch (action) {
           case 'move-up':
             console.log('⬆️ 上移任务');
-            if (onTaskMove) {
-              onTaskMove(taskId, 'up');
-              // 延迟重新渲染
+            if (onTaskMoveRef.current) {
+              onTaskMoveRef.current(taskId, 'up');
               setTimeout(() => {
                 gantt.render();
               }, 50);
@@ -530,9 +541,8 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
 
           case 'move-down':
             console.log('⬇️ 下移任务');
-            if (onTaskMove) {
-              onTaskMove(taskId, 'down');
-              // 延迟重新渲染
+            if (onTaskMoveRef.current) {
+              onTaskMoveRef.current(taskId, 'down');
               setTimeout(() => {
                 gantt.render();
               }, 50);
@@ -541,7 +551,7 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
 
           case 'edit':
             console.log('📝 编辑任务');
-            if (onEditTask) {
+            if (onEditTaskRef.current) {
               const task: GanttTask = {
                 id: String(ganttTask.id),
                 text: ganttTask.text,
@@ -558,14 +568,14 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
                 status: (ganttTask.status === 'in-progress' || ganttTask.status === 'completed' || ganttTask.status === 'blocked' ? ganttTask.status : 'planned') as 'planned' | 'in-progress' | 'completed' | 'blocked',
                 description: ganttTask.description || '',
               };
-              onEditTask(task);
+              onEditTaskRef.current(task);
             }
             break;
 
           case 'delete':
             console.log('🗑️ 删除任务');
             if (confirm(`确定要删除任务 "${ganttTask.text}" 吗？`)) {
-              deleteTask(taskId);
+              deleteTaskRef.current(taskId);
             }
             break;
         }
@@ -587,37 +597,34 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
         const taskId = (moveUpBtn || moveDownBtn || editBtn || deleteBtn)?.getAttribute('data-task-id');
         if (!taskId) return;
 
-        const task = tasks.find(t => t.id === taskId);
-        if (!task) return;
+        const ganttTask = gantt.getTask(taskId);
+        if (!ganttTask) return;
 
-        if (moveUpBtn && onTaskMove) {
-          onTaskMove(taskId, 'up');
-        } else if (moveDownBtn && onTaskMove) {
-          onTaskMove(taskId, 'down');
-        } else if (editBtn && onEditTask) {
-          const ganttTask = gantt.getTask(taskId);
-          if (ganttTask) {
-            const taskData: GanttTask = {
-              id: String(ganttTask.id),
-              text: ganttTask.text,
-              start_date: gantt.date.date_to_str('%Y-%m-%d')(ganttTask.start_date),
-              end_date: gantt.date.date_to_str('%Y-%m-%d')(ganttTask.end_date),
-              duration: ganttTask.duration ?? 1,
-              progress: ganttTask.progress ?? 0,
-              type: (ganttTask.type === 'project' || ganttTask.type === 'subtask' ? ganttTask.type : 'task') as 'project' | 'task' | 'subtask',
-              parent: ganttTask.parent ? String(ganttTask.parent) : null,
-              owner: ganttTask.owner || '',
-              is_milestone: ganttTask.is_milestone || false,
-              phase: (ganttTask.phase === 'H1' || ganttTask.phase === 'H2' ? ganttTask.phase : 'H1') as 'H1' | 'H2' | 'custom',
-              priority: (ganttTask.priority === 'low' || ganttTask.priority === 'high' ? ganttTask.priority : 'medium') as 'low' | 'medium' | 'high',
-              status: (ganttTask.status === 'in-progress' || ganttTask.status === 'completed' || ganttTask.status === 'blocked' ? ganttTask.status : 'planned') as 'planned' | 'in-progress' | 'completed' | 'blocked',
-              description: ganttTask.description || '',
-            };
-            onEditTask(taskData);
-          }
+        if (moveUpBtn && onTaskMoveRef.current) {
+          onTaskMoveRef.current(taskId, 'up');
+        } else if (moveDownBtn && onTaskMoveRef.current) {
+          onTaskMoveRef.current(taskId, 'down');
+        } else if (editBtn && onEditTaskRef.current) {
+          const taskData: GanttTask = {
+            id: String(ganttTask.id),
+            text: ganttTask.text,
+            start_date: gantt.date.date_to_str('%Y-%m-%d')(ganttTask.start_date),
+            end_date: gantt.date.date_to_str('%Y-%m-%d')(ganttTask.end_date),
+            duration: ganttTask.duration ?? 1,
+            progress: ganttTask.progress ?? 0,
+            type: (ganttTask.type === 'project' || ganttTask.type === 'subtask' ? ganttTask.type : 'task') as 'project' | 'task' | 'subtask',
+            parent: ganttTask.parent ? String(ganttTask.parent) : null,
+            owner: ganttTask.owner || '',
+            is_milestone: ganttTask.is_milestone || false,
+            phase: (ganttTask.phase === 'H1' || ganttTask.phase === 'H2' ? ganttTask.phase : 'H1') as 'H1' | 'H2' | 'custom',
+            priority: (ganttTask.priority === 'low' || ganttTask.priority === 'high' ? ganttTask.priority : 'medium') as 'low' | 'medium' | 'high',
+            status: (ganttTask.status === 'in-progress' || ganttTask.status === 'completed' || ganttTask.status === 'blocked' ? ganttTask.status : 'planned') as 'planned' | 'in-progress' | 'completed' | 'blocked',
+            description: ganttTask.description || '',
+          };
+          onEditTaskRef.current(taskData);
         } else if (deleteBtn) {
-          if (confirm(`确定要删除任务 "${task.text}" 吗？`)) {
-            deleteTask(taskId);
+          if (confirm(`确定要删除任务 "${ganttTask.text}" 吗？`)) {
+            deleteTaskRef.current(taskId);
           }
         }
       }
@@ -761,17 +768,11 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
   // 使用ref保存最新的filteredTasks和links
   const filteredTasksRef = useRef(filteredTasks);
   const linksRef = useRef(links);
-  const onTaskMoveRef = useRef(onTaskMove);
-  const onEditTaskRef = useRef(onEditTask);
-  const deleteTaskRef = useRef(deleteTask);
 
   useEffect(() => {
     filteredTasksRef.current = filteredTasks;
     linksRef.current = links;
-    onTaskMoveRef.current = onTaskMove;
-    onEditTaskRef.current = onEditTask;
-    deleteTaskRef.current = deleteTask;
-  }, [filteredTasks, links, onTaskMove, onEditTask, deleteTask]);
+  }, [filteredTasks, links]);
 
   // 更新数据
   useEffect(() => {
