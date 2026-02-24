@@ -2,34 +2,25 @@
  * DHTMLX Gantt 自定义主题样式
  */
 
-/* 项目/模块样式 - 蓝色 */
+/* 任务类型的基础样式（浅色作为底色，会被状态样式覆盖） */
 .gantt-project .gantt_task_line {
-  background-color: #6395ed;
-  border-color: #4a7cd9;
+  background-color: #e5e7eb;
+  border-color: #d1d5db;
 }
 
-.gantt-project .gantt_task_progress {
-  background-color: #4a7cd9;
-}
-
-/* 任务样式 - 绿色 */
 .gantt-task .gantt_task_line {
-  background-color: #66bb6a;
-  border-color: #4caf50;
+  background-color: #e5e7eb;
+  border-color: #d1d5db;
 }
 
-.gantt-task .gantt_task_progress {
-  background-color: #4caf50;
-}
-
-/* 子任务样式 - 橙色 */
 .gantt-subtask .gantt_task_line {
-  background-color: #ffa726;
-  border-color: #fb8c00;
+  background-color: #e5e7eb;
+  border-color: #d1d5db;
 }
 
-.gantt-subtask .gantt_task_progress {
-  background-color: #fb8c00;
+/* 进度条默认样式 */
+.gantt_task_progress {
+  background-color: rgba(59, 130, 246, 0.5);
 }
 
 /* 里程碑样式 */
@@ -173,36 +164,71 @@
   max-width: none !important;
 }
 
-/* 任务状态样式 - 进度条颜色 */
-/* 待开始 - 蓝色 */
-.gantt-status-planned .gantt_task_progress {
+/* 任务状态样式 - 任务条颜色 */
+/* 未开始 - 黑色 */
+.gantt-status-planned .gantt_task_line {
+  background-color: #1f2937 !important; /* 深灰色/黑色 */
+  border-color: #111827 !important;
+}
+
+/* 进行中且正常 - 蓝色 */
+.gantt_task_line.gantt-status-in-progress,
+.gantt-status-in-progress .gantt_task_line {
   background-color: #3b82f6 !important; /* 蓝色 */
+  border-color: #2563eb !important;
 }
 
-/* 进行中 - 绿色 */
+/* 进行中的进度条 */
+.gantt_task_progress.gantt-status-in-progress,
 .gantt-status-in-progress .gantt_task_progress {
-  background-color: #10b981 !important; /* 绿色 */
+  background-color: rgba(255, 255, 255, 0.3) !important;
 }
 
-/* 已完成 - 灰色 */
+/* 已完成 - 绿色 */
+.gantt_task_line.gantt-status-completed,
+.gantt-status-completed .gantt_task_line {
+  background-color: #10b981 !important; /* 绿色 */
+  border-color: #059669 !important;
+}
+
+.gantt_task_progress.gantt-status-completed,
 .gantt-status-completed .gantt_task_progress {
-  background-color: #6b7280 !important; /* 灰色 */
+  background-color: #059669 !important;
+}
+
+/* 已完成任务的文本添加删除线 */
+.gantt-status-completed .gantt_task_content,
+.gantt-status-completed .task-cell-content {
+  text-decoration: line-through;
+  text-decoration-color: rgba(0, 0, 0, 0.3);
+  text-decoration-thickness: 2px;
+}
+
+/* 已完成任务的任务名称列 */
+.gantt_grid_data .gantt_row.gantt-status-completed .gantt_cell[data-column-name="text"],
+.gantt_grid_data .gantt_row.gantt-status-completed .gantt_tree_content {
+  text-decoration: line-through;
+  text-decoration-color: rgba(0, 0, 0, 0.3);
+  text-decoration-thickness: 2px;
+  opacity: 0.75;
 }
 
 /* 阻塞 - 紫色 */
-.gantt-status-blocked .gantt_task_progress {
+.gantt-status-blocked .gantt_task_line {
   background-color: #8b5cf6 !important; /* 紫色 */
+  border-color: #7c3aed !important;
 }
 
 /* 时间预警样式 */
 /* 已超期 - 红色（覆盖其他状态） */
 .gantt-overdue .gantt_task_line {
-  border-color: #ef4444 !important;
+  background-color: #ef4444 !important; /* 红色 */
+  border-color: #dc2626 !important;
   box-shadow: 0 0 0 1px #ef4444 !important;
 }
 
 .gantt-overdue .gantt_task_progress {
-  background-color: #ef4444 !important; /* 红色 */
+  background-color: #dc2626 !important; /* 深红色 */
 }
 
 /* 距离结束日期1周内 - 黄色 */
@@ -217,10 +243,11 @@
 
 /* 确保超期样式优先级最高（红色覆盖黄色） */
 .gantt-overdue.gantt-near-deadline .gantt_task_line {
-  border-color: #ef4444 !important;
+  background-color: #ef4444 !important;
+  border-color: #dc2626 !important;
   box-shadow: 0 0 0 1px #ef4444 !important;
 }
 
 .gantt-overdue.gantt-near-deadline .gantt_task_progress {
-  background-color: #ef4444 !important;
+  background-color: #dc2626 !important;
 }

@@ -26,6 +26,7 @@ interface StorageData {
   resources: any[];
   resourceAssignments: any[];
   searchQueries: Record<'project' | 'product', string>;
+  filterStatuses: Record<'project' | 'product', string[]>;
 }
 
 // API辅助函数
@@ -160,7 +161,8 @@ const loadFromAPI = async (): Promise<StorageData | null> => {
       config,
       resources: [], // API暂时不支持资源
       resourceAssignments: [], // API暂时不支持资源分配
-      searchQueries: { project: '', product: '' }
+      searchQueries: { project: '', product: '' },
+      filterStatuses: { project: [], product: [] }
     };
   } catch (error) {
     console.error('从API加载数据失败:', error);
@@ -203,7 +205,8 @@ const loadFromStorage = (): StorageData | null => {
           config: parsed.config || initialData.config,
           resources: parsed.resources || [],
           resourceAssignments: parsed.resourceAssignments || [],
-          searchQueries: parsed.searchQueries || { project: '', product: '' }
+          searchQueries: parsed.searchQueries || { project: '', product: '' },
+          filterStatuses: parsed.filterStatuses || { project: [], product: [] }
         };
 
         // 保存迁移后的数据
@@ -235,7 +238,8 @@ const loadFromStorage = (): StorageData | null => {
         config: parsed.config || initialData.config,
         resources: parsed.resources || [],
         resourceAssignments: parsed.resourceAssignments || [],
-        searchQueries: { project: '', product: '' }
+        searchQueries: { project: '', product: '' },
+        filterStatuses: { project: [], product: [] }
       };
 
       // 保存迁移后的数据
@@ -366,6 +370,8 @@ export const useGanttStore = create<GanttStore>()((set, get) => ({
   resourceAssignments: savedState?.resourceAssignments || [],
   activeView: 'project',
   searchQueries: savedState?.searchQueries || { project: '', product: '' },
+  // 任务筛选条件
+  filterStatuses: savedState?.filterStatuses || { project: [], product: [] },
 
   // 任务操作
   addTask: (taskData, view = get().activeView) => {
@@ -644,23 +650,65 @@ export const useGanttStore = create<GanttStore>()((set, get) => ({
     }));
   },
 
+  setFilterStatuses: (view, statuses) => {
+    set((state) => ({
+      filterStatuses: {
+        ...state.filterStatuses,
+        [view]: statuses
+      }
+    }));
+  },
+
   getTasksByView: (view) => {
     return get().tasks.filter(task => task.view === view);
   },
 
   getFilteredTasksByView: (view) => {
-    const tasks = get().tasks.filter(task => task.view === view);
-    const searchQuery = get().searchQueries[view]?.toLowerCase() || '';
+    const state = get();
+    const tasks = state.tasks.filter(task => task.view === view);
+    const searchQuery = state.searchQueries[view]?.toLowerCase() || '';
+    const selectedFilters = state.filterStatuses[view] || [];
 
-    if (!searchQuery.trim()) {
-      return tasks;
+    // 搜索过滤
+    let filteredTasks = tasks;
+    if (searchQuery.trim()) {
+      filteredTasks = tasks.filter(task => {
+        const textMatch = task.text?.toLowerCase().includes(searchQuery);
+        const ownerMatch = task.owner?.toLowerCase().includes(searchQuery);
+        return textMatch || ownerMatch;
+      });
     }
 
-    return tasks.filter(task => {
-      const textMatch = task.text?.toLowerCase().includes(searchQuery);
-      const ownerMatch = task.owner?.toLowerCase().includes(searchQuery);
-      return textMatch || ownerMatch;
-    });
+    // 状态筛选过滤
+    if (selectedFilters.length > 0) {
+      filteredTasks = filteredTasks.filter(task => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const taskEndDate = new Date(task.end_date);
+        taskEndDate.setHours(0, 0, 0, 0);
+        const daysDiff = Math.ceil((taskEndDate.getTime() - today.getTime()) / (1000 * 3600 * 24));
+        const isCompleted = task.status === 'completed' || task.progress >= 1;
+
+        return selectedFilters.some(filter => {
+          switch (filter) {
+            case 'completed':
+              return isCompleted;
+            case 'in-progress':
+              return task.status === 'in-progress' && !isCompleted && daysDiff >= 0;
+            case 'overdue':
+              return !isCompleted && daysDiff < 0;
+            case 'planned':
+              return task.status === 'planned' && !isCompleted && daysDiff >= 0;
+            case 'milestone':
+              return task.is_milestone;
+            default:
+              return false;
+          }
+        });
+      });
+    }
+
+    return filteredTasks;
   },
 
   moveTaskUp: (taskId) => {
@@ -933,6 +981,7 @@ export const useGanttStore = create<GanttStore>()((set, get) => ({
         resources: state.resources,
         resourceAssignments: state.resourceAssignments,
         searchQueries: state.searchQueries,
+        filterStatuses: state.filterStatuses,
       };
 
       await apiCall.migrateData(storageData);
@@ -1008,6 +1057,7 @@ export const useGanttStore = create<GanttStore>()((set, get) => ({
         resources: state.resources,
         resourceAssignments: state.resourceAssignments,
         searchQueries: state.searchQueries,
+        filterStatuses: state.filterStatuses,
       };
 
       saveToStorage(storageData);

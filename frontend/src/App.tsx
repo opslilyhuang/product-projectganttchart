@@ -18,7 +18,7 @@ type ViewMode = 'gantt' | 'product' | 'resources' | 'analytics';
 
 export default function App() {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [activeView, setActiveView] = useState<ViewMode>('gantt');
+  const [activeView, setActiveView] = useState<ViewMode>('product'); // 默认为产品甘特图
   const [editingTask, setEditingTask] = useState<GanttTask | null>(null);
   const { tasks, moveTaskUp, moveTaskDown, setActiveView: setStoreActiveView, getTasksByView, copyProjectToProduct } = useGanttStore();
   const { user, logout } = useAuthStore();

@@ -140,6 +140,8 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
     gantt.config.drag_resize = true;
     gantt.config.drag_move = true;
     gantt.config.drag_links = true;
+    gantt.config.drag_grid = true; // 启用网格调整
+    gantt.config.grid_resize = true; // 启用列宽调整
 
     // 列配置
     gantt.config.columns = [
@@ -163,12 +165,46 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
       },
       {
         name: 'end_date',
-        label: '结束日期',
+        label: '结束日期 <span class="end-date-legend-icon" style="cursor:pointer;margin-left:4px;color:#f59e0b;font-weight:bold;font-size:16px;">ⓘ</span>',
         align: 'center',
         width: 120,
         resize: true,
         template: (task: any) => {
-          return gantt.date.date_to_str('%Y-%m-%d')(task.end_date);
+          const endDate = gantt.date.date_to_str('%Y-%m-%d')(task.end_date);
+          const today = new Date();
+          const taskEndDate = new Date(task.end_date);
+          const daysDiff = Math.ceil((taskEndDate.getTime() - today.getTime()) / (1000 * 3600 * 24));
+
+          // 根据任务状态和日期返回带颜色的HTML
+          let colorStyle = '';
+          let colorClass = '';
+
+          // 检查是否完成（进度100%或状态为完成）
+          const isCompleted = task.status === 'completed' || task.progress >= 1;
+
+          if (isCompleted) {
+            // 已完成（包括提前完成） - 绿色
+            colorStyle = 'color: #10b981; font-weight: 600;';
+            colorClass = 'status-completed';
+          } else if (daysDiff < 0) {
+            // 已延期 - 红色
+            colorStyle = 'color: #ef4444; font-weight: 600;';
+            colorClass = 'status-overdue';
+          } else if (task.status === 'in-progress') {
+            // 进行中 - 蓝色
+            colorStyle = 'color: #3b82f6; font-weight: 600;';
+            colorClass = 'status-in-progress';
+          } else if (daysDiff <= 7) {
+            // 即将到期 - 黄色
+            colorStyle = 'color: #f59e0b; font-weight: 600;';
+            colorClass = 'status-near-deadline';
+          } else {
+            // 未开始 - 黑色
+            colorStyle = 'color: #1f2937;';
+            colorClass = 'status-planned';
+          }
+
+          return `<span class="${colorClass}" style="${colorStyle}">${endDate}</span>`;
         }
       },
       {
@@ -289,14 +325,17 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
 
       // 时间预警样式
       try {
-        if (task.end_date) {
+        // 检查是否已完成
+        const isCompleted = task.status === 'completed' || (task.progress !== undefined && task.progress >= 1);
+
+        if (task.end_date && !isCompleted) {
           const endDate = new Date(task.end_date);
           const today = new Date();
           const timeDiff = endDate.getTime() - today.getTime();
           const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
 
           if (daysDiff < 0) {
-            // 已超期
+            // 已超期（仅对未完成的任务）
             className += 'gantt-overdue ';
           } else if (daysDiff <= 7) {
             // 距离结束日期1周内
@@ -476,6 +515,19 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
           if (onTaskMove) {
             onTaskMove(taskId, 'up');
             console.log('✅ onTaskMove回调已调用');
+            // 延迟重新渲染甘特图以显示新的排序
+            setTimeout(() => {
+              const sortedTasks = [...filteredTasks].sort((a, b) => {
+                const orderA = a.order || 0;
+                const orderB = b.order || 0;
+                return orderA - orderB;
+              });
+              gantt.clearAll();
+              gantt.parse({ data: sortedTasks, links: links.filter(link =>
+                filteredTasks.some(t => t.id === link.source) && filteredTasks.some(t => t.id === link.target)
+              )});
+              console.log('✅ 甘特图已重新渲染');
+            }, 100);
           } else {
             console.log('❌ onTaskMove回调不存在');
           }
@@ -484,15 +536,49 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
           if (onTaskMove) {
             onTaskMove(taskId, 'down');
             console.log('✅ onTaskMove回调已调用');
+            // 延迟重新渲染甘特图以显示新的排序
+            setTimeout(() => {
+              const sortedTasks = [...filteredTasks].sort((a, b) => {
+                const orderA = a.order || 0;
+                const orderB = b.order || 0;
+                return orderA - orderB;
+              });
+              gantt.clearAll();
+              gantt.parse({ data: sortedTasks, links: links.filter(link =>
+                filteredTasks.some(t => t.id === link.source) && filteredTasks.some(t => t.id === link.target)
+              )});
+              console.log('✅ 甘特图已重新渲染');
+            }, 100);
           } else {
             console.log('❌ onTaskMove回调不存在');
           }
         } else if (editBtn) {
           console.log('📝 准备打开编辑器');
-          // 编辑任务 - 调用父组件的编辑回调
+          // 编辑任务 - 从gantt实例获取最新数据
           if (onEditTask) {
-            console.log('✅ 调用onEditTask');
-            onEditTask(task);
+            const ganttTask = gantt.getTask(taskId);
+            if (ganttTask) {
+              console.log('✅ 调用onEditTask，使用gantt实例中的最新数据');
+              const latestTask: GanttTask = {
+                id: String(ganttTask.id),
+                text: ganttTask.text,
+                start_date: gantt.date.date_to_str('%Y-%m-%d')(ganttTask.start_date),
+                end_date: gantt.date.date_to_str('%Y-%m-%d')(ganttTask.end_date),
+                duration: ganttTask.duration ?? 1,
+                progress: ganttTask.progress ?? 0,
+                type: (ganttTask.type === 'project' || ganttTask.type === 'subtask' ? ganttTask.type : 'task') as 'project' | 'task' | 'subtask',
+                parent: ganttTask.parent ? String(ganttTask.parent) : null,
+                owner: ganttTask.owner || '',
+                is_milestone: ganttTask.is_milestone || false,
+                phase: (ganttTask.phase === 'H1' || ganttTask.phase === 'H2' ? ganttTask.phase : 'H1') as 'H1' | 'H2' | 'custom',
+                priority: (ganttTask.priority === 'low' || ganttTask.priority === 'high' ? ganttTask.priority : 'medium') as 'low' | 'medium' | 'high',
+                status: (ganttTask.status === 'in-progress' || ganttTask.status === 'completed' || ganttTask.status === 'blocked' ? ganttTask.status : 'planned') as 'planned' | 'in-progress' | 'completed' | 'blocked',
+                description: ganttTask.description || '',
+              };
+              onEditTask(latestTask);
+            } else {
+              console.log('❌ 在gantt实例中找不到任务:', taskId);
+            }
           } else {
             console.log('❌ onEditTask不存在');
           }
@@ -514,6 +600,101 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
     console.log('  - beforeLightboxHandler:', !!beforeLightboxHandler);
     console.log('  - taskDblClickHandler:', !!taskDblClickHandler);
 
+    // 添加结束日期图例点击事件
+    const handleLegendClick = (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (target.classList.contains('end-date-legend-icon')) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // 创建图例弹窗
+        const modal = document.createElement('div');
+        modal.id = 'gantt-legend-modal';
+        modal.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+        `;
+
+        modal.innerHTML = `
+          <div style="
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 400px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+          ">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+              <h2 style="font-size: 18px; font-weight: 600; color: #1f2937; margin: 0;">📋 任务状态图例</h2>
+              <button id="close-legend-modal" style="
+                background: none;
+                border: none;
+                font-size: 24px;
+                cursor: pointer;
+                color: #6b7280;
+                padding: 0;
+                width: 32px;
+                height: 32px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 6px;
+              ">&times;</button>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <div style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f9fafb; border-radius: 8px;">
+                <span style="width: 24px; height: 24px; background: #10b981; border-radius: 4px; display: inline-block;"></span>
+                <span style="font-size: 14px; color: #374151;"><strong>已完成</strong> - 任务已完成（包括提前完成）</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f9fafb; border-radius: 8px;">
+                <span style="width: 24px; height: 24px; background: #3b82f6; border-radius: 4px; display: inline-block;"></span>
+                <span style="font-size: 14px; color: #374151;"><strong>进行中</strong> - 任务正在进行中且进度正常</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f9fafb; border-radius: 8px;">
+                <span style="width: 24px; height: 24px; background: #ef4444; border-radius: 4px; display: inline-block;"></span>
+                <span style="font-size: 14px; color: #374151;"><strong>已延期</strong> - 任务已超过结束日期但未完成</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f9fafb; border-radius: 8px;">
+                <span style="width: 24px; height: 24px; background: #f59e0b; border-radius: 4px; display: inline-block;"></span>
+                <span style="font-size: 14px; color: #374151;"><strong>即将到期</strong> - 距离结束日期7天内</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f9fafb; border-radius: 8px;">
+                <span style="width: 24px; height: 24px; background: #1f2937; border-radius: 4px; display: inline-block;"></span>
+                <span style="font-size: 14px; color: #374151;"><strong>未开始</strong> - 任务尚未开始</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px; padding: 8px; background: #f9fafb; border-radius: 8px;">
+                <span style="width: 24px; height: 24px; background: #8b5cf6; border-radius: 4px; display: inline-block;"></span>
+                <span style="font-size: 14px; color: #374151;"><strong>已阻塞</strong> - 任务被阻塞无法进行</span>
+              </div>
+            </div>
+          </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // 点击关闭按钮或背景关闭弹窗
+        const closeBtn = modal.querySelector('#close-legend-modal');
+        const closeModal = () => {
+          document.body.removeChild(modal);
+        };
+        closeBtn?.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) {
+            closeModal();
+          }
+        });
+      }
+    };
+
+    containerRef.current?.addEventListener('click', handleLegendClick);
+
     // 清理函数
     return () => {
       if (afterUpdateHandler) gantt.detachEvent(afterUpdateHandler);
@@ -521,6 +702,7 @@ export default function GanttChart({ onEditTask, onTaskMove, viewType = 'project
       if (beforeLightboxHandler) gantt.detachEvent(beforeLightboxHandler);
       if (taskDblClickHandler) gantt.detachEvent(taskDblClickHandler);
       containerRef.current?.removeEventListener('click', handleButtonClick);
+      containerRef.current?.removeEventListener('click', handleLegendClick);
     };
   }, [isInitialized]);
 

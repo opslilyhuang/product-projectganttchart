@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Plus, Download, Upload, RotateCcw, Calendar, FileImage, FileText, Printer, ChevronDown, Activity, Zap, CalendarDays, Save, CheckCircle, Search, X, Database, Cloud } from 'lucide-react';
+import { Plus, Download, Upload, RotateCcw, Calendar, FileImage, FileText, Printer, ChevronDown, Activity, Zap, CalendarDays, Save, CheckCircle, Search, X, Database, Cloud, Filter, CheckSquare, Square } from 'lucide-react';
 import { useGanttStore } from '@/stores/ganttStore';
 import { useAuthStore } from '@/stores/authStore';
 import Button from '@/components/ui/Button';
@@ -17,7 +17,7 @@ interface GanttToolbarProps {
 }
 
 export default function GanttToolbar({ onAddTask, viewType = 'project' }: GanttToolbarProps) {
-  const { config, setConfig, exportData, importData, resetData, tasks, setSearchQuery, searchQueries, migrateToAPI } = useGanttStore();
+  const { config, setConfig, exportData, importData, resetData, tasks, setSearchQuery, searchQueries, migrateToAPI, filterStatuses, setFilterStatuses } = useGanttStore();
   const { user, isAuthenticated } = useAuthStore();
   const [currentView, setCurrentView] = useState<ViewMode>(config.view);
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -25,6 +25,18 @@ export default function GanttToolbar({ onAddTask, viewType = 'project' }: GanttT
   const [searchInput, setSearchInput] = useState(searchQueries[viewType] || '');
   const [migrating, setMigrating] = useState(false);
   const [migrationResult, setMigrationResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
+
+  // 筛选选项定义
+  const filterOptions = [
+    { value: 'completed', label: '已完成', color: 'bg-green-500' },
+    { value: 'in-progress', label: '进行中未延期', color: 'bg-blue-500' },
+    { value: 'overdue', label: '延期', color: 'bg-red-500' },
+    { value: 'planned', label: '待开始', color: 'bg-gray-700' },
+    { value: 'milestone', label: '里程碑节点', color: 'bg-yellow-500' },
+  ];
+
+  const currentFilters = filterStatuses[viewType] || [];
 
   // 读取migrationResult以消除TypeScript警告
   console.log(migrationResult);
@@ -86,6 +98,14 @@ export default function GanttToolbar({ onAddTask, viewType = 'project' }: GanttT
   const handleSearchClear = () => {
     setSearchInput('');
     setSearchQuery(viewType, '');
+  };
+
+  const toggleFilter = (filterValue: string) => {
+    const currentFilters = filterStatuses[viewType] || [];
+    const newFilters = currentFilters.includes(filterValue)
+      ? currentFilters.filter(f => f !== filterValue)
+      : [...currentFilters, filterValue];
+    setFilterStatuses(viewType, newFilters);
   };
 
   const handleSave = () => {
@@ -207,6 +227,80 @@ export default function GanttToolbar({ onAddTask, viewType = 'project' }: GanttT
                 </button>
               )}
             </div>
+          </div>
+
+          {/* 筛选按钮 */}
+          <div className="relative ml-2">
+            <button
+              onClick={() => setShowFilterMenu(!showFilterMenu)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                currentFilters.length > 0
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+              title="筛选任务"
+            >
+              <Filter className="w-4 h-4" />
+              筛选
+              {currentFilters.length > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded-full text-xs">
+                  {currentFilters.length}
+                </span>
+              )}
+            </button>
+
+            {showFilterMenu && (
+              <>
+                {/* 遮罩层 */}
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowFilterMenu(false)}
+                />
+
+                {/* 下拉菜单 */}
+                <div className="absolute left-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-3 z-20">
+                  <div className="px-3 py-2 border-b border-gray-200 mb-2">
+                    <div className="text-sm font-semibold text-gray-700">任务状态筛选</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {currentFilters.length === 0 ? '未选择筛选条件' : `已选择 ${currentFilters.length} 个条件`}
+                    </div>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto">
+                    {filterOptions.map((option) => {
+                      const isSelected = currentFilters.includes(option.value);
+                      return (
+                        <button
+                          key={option.value}
+                          onClick={() => toggleFilter(option.value)}
+                          className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                        >
+                          <span className={`w-4 h-4 rounded ${option.color} flex-shrink-0`}></span>
+                          <span className="flex-1">{option.label}</span>
+                          {isSelected ? (
+                            <CheckSquare className="w-4 h-4 text-blue-600" />
+                          ) : (
+                            <Square className="w-4 h-4 text-gray-400" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {currentFilters.length > 0 && (
+                    <>
+                      <div className="border-t border-gray-200 mt-2 pt-2 px-3">
+                        <button
+                          onClick={() => setFilterStatuses(viewType, [])}
+                          className="w-full px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors flex items-center justify-center gap-2"
+                        >
+                          <X className="w-3 h-3" />
+                          清除筛选
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
 

@@ -84,6 +84,7 @@ export interface GanttStore {
   resourceAssignments: ResourceAssignment[];
   activeView: 'project' | 'product'; // 当前活动视图
   searchQueries: Record<'project' | 'product', string>; // 各视图的搜索查询
+  filterStatuses: Record<'project' | 'product', string[]>; // 各视图的筛选条件
 
   // 任务操作
   addTask: (task: Omit<GanttTask, 'id'>, view?: 'project' | 'product') => void;
@@ -114,8 +115,9 @@ export interface GanttStore {
   // 视图和搜索操作
   setActiveView: (view: 'project' | 'product') => void;
   setSearchQuery: (view: 'project' | 'product', query: string) => void;
+  setFilterStatuses: (view: 'project' | 'product', statuses: string[]) => void;
   getTasksByView: (view: 'project' | 'product') => GanttTask[];
-  getFilteredTasksByView: (view: 'project' | 'product') => GanttTask[]; // 根据搜索查询过滤的任务
+  getFilteredTasksByView: (view: 'project' | 'product') => GanttTask[]; // 根据搜索查询和筛选条件过滤的任务
   moveTaskUp: (taskId: string) => void;
   moveTaskDown: (taskId: string) => void;
   reorderTasks: (parentId: string | null, view: 'project' | 'product') => void;

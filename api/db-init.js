@@ -147,7 +147,7 @@ try {
 // 创建默认管理员用户（用于测试）
 import bcrypt from 'bcryptjs';
 
-async function createAdminUser(username, email, password, fullName, role = 'admin') {
+async function createAdminUser(username, email, password, fullName, role = 'admin', canEdit = 1) {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const stmt = db.prepare(`
@@ -155,8 +155,9 @@ async function createAdminUser(username, email, password, fullName, role = 'admi
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
 
-    stmt.run(username, email, hashedPassword, fullName, role, 'active', 1);
-    console.log(`✅ 管理员用户创建成功 (用户名: ${username}, 密码: ${password}, 角色: ${role})`);
+    stmt.run(username, email, hashedPassword, fullName, role, 'active', canEdit);
+    const canEditText = canEdit === 1 ? '有编辑权限' : '只读权限';
+    console.log(`✅ 用户创建成功 (用户名: ${username}, 密码: ${password}, 角色: ${role}, 权限: ${canEditText})`);
     return true;
   } catch (error) {
     console.log(`ℹ️  ${username} 用户已存在或创建失败:`, error.message);
@@ -167,6 +168,9 @@ async function createAdminUser(username, email, password, fullName, role = 'admi
 // 创建默认管理员用户
 await createAdminUser('admin', 'admin@example.com', 'admin123', '系统管理员');
 await createAdminUser('julianhuang', 'julianhuang@example.com', '1234567890@', 'Julian Huang');
+
+// 创建只读用户（viewer）
+await createAdminUser('viewer', 'viewer@example.com', 'viewonly123', '查看用户', 'user', 0);
 
 db.close();
 console.log('✅ 数据库初始化完成！');
