@@ -20,8 +20,18 @@ export default function App() {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [activeView, setActiveView] = useState<ViewMode>('product'); // 默认为产品甘特图
   const [editingTask, setEditingTask] = useState<GanttTask | null>(null);
-  const { tasks, moveTaskUp, moveTaskDown, setActiveView: setStoreActiveView, getTasksByView, copyProjectToProduct } = useGanttStore();
-  const { user, logout } = useAuthStore();
+  const { tasks, moveTaskUp, moveTaskDown, setActiveView: setStoreActiveView, getTasksByView, copyProjectToProduct, loadFromAPI } = useGanttStore();
+  const { user, logout, isAuthenticated } = useAuthStore();
+
+  // 登录后自动从API刷新数据
+  useEffect(() => {
+    if (isAuthenticated && loadFromAPI) {
+      console.log('🔄 登录成功，正在从API刷新数据...');
+      loadFromAPI().catch(err => {
+        console.error('从API刷新数据失败:', err);
+      });
+    }
+  }, [isAuthenticated, loadFromAPI]);
 
   // 计算产品任务数量
   const productTasksCount = useMemo(() => getTasksByView('product').length, [tasks, getTasksByView]);

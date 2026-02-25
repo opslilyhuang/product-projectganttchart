@@ -35,7 +35,7 @@ const apiCall = {
   createTask: async (task: GanttTask): Promise<void> => {
     if (!USE_API) return;
     try {
-      await api.post('/api/tasks', task);
+      await api.post('/tasks', task);
       console.log('✅ 任务已保存到API:', task.id);
     } catch (error) {
       console.error('保存任务到API失败:', error);
@@ -47,7 +47,7 @@ const apiCall = {
   updateTask: async (id: string, updates: Partial<GanttTask>): Promise<void> => {
     if (!USE_API) return;
     try {
-      await api.put(`/api/tasks/${id}`, updates);
+      await api.put(`/tasks/${id}`, updates);
       console.log('✅ 任务已更新到API:', id);
     } catch (error) {
       console.error('更新任务到API失败:', error);
@@ -59,7 +59,7 @@ const apiCall = {
   deleteTask: async (id: string): Promise<void> => {
     if (!USE_API) return;
     try {
-      await api.delete(`/api/tasks/${id}`);
+      await api.delete(`/tasks/${id}`);
       console.log('✅ 任务已从API删除:', id);
     } catch (error) {
       console.error('从API删除任务失败:', error);
@@ -94,7 +94,7 @@ const apiCall = {
   updateConfig: async (config: GanttConfig): Promise<void> => {
     if (!USE_API) return;
     try {
-      await api.put('/api/config', config);
+      await api.put('/config', config);
       console.log('✅ 配置已保存到API');
     } catch (error) {
       console.error('保存配置到API失败:', error);
@@ -106,7 +106,7 @@ const apiCall = {
     if (!USE_API) return;
     try {
       const allTasks = [...data.projectTasks, ...data.productTasks];
-      await api.post('/api/migrate-data', {
+      await api.post('/migrate-data', {
         tasks: allTasks,
         links: data.links,
         config: data.config
@@ -129,7 +129,7 @@ const loadFromAPI = async (): Promise<StorageData | null> => {
 
   try {
     console.log('=== 从API加载数据 ===');
-    const response = await api.get('/api/tasks');
+    const response = await api.get('/tasks');
     console.log('API响应:', response);
 
     const tasks: GanttTask[] = response.tasks || [];
@@ -138,7 +138,7 @@ const loadFromAPI = async (): Promise<StorageData | null> => {
     // 从API获取配置
     let config: GanttConfig;
     try {
-      const configResponse = await api.get('/api/config');
+      const configResponse = await api.get('/config');
       config = configResponse;
     } catch (error) {
       console.warn('获取配置失败，使用默认配置:', error);
@@ -303,6 +303,48 @@ const initializeTaskOrders = (tasks: GanttTask[]): GanttTask[] => {
   return updatedTasks;
 };
 
+// 初始化数据 - 优先从API加载
+const initializeData = async (): Promise<StorageData> => {
+  console.log('=== 初始化数据加载 ===');
+
+  // 1. 首先尝试从API加载（如果启用）
+  if (USE_API) {
+    try {
+      const apiData = await loadFromAPI();
+      if (apiData) {
+        console.log('✅ 成功从API加载数据');
+        saveToStorage(apiData); // 缓存到localStorage
+        return apiData;
+      }
+    } catch (error) {
+      console.warn('⚠️ API加载失败，尝试从localStorage加载:', error);
+    }
+  }
+
+  // 2. 回退到localStorage
+  const savedState = loadFromStorage();
+  if (savedState) {
+    console.log('✅ 从localStorage加载数据');
+    return savedState;
+  }
+
+  // 3. 使用初始数据
+  console.log('✅ 使用初始数据');
+  return {
+    version: STORAGE_VERSION,
+    timestamp: new Date().toISOString(),
+    projectTasks: (initialData.tasks as GanttTask[]).filter(task => task.view === 'project'),
+    productTasks: (initialData.tasks as GanttTask[]).filter(task => task.view === 'product'),
+    links: initialData.links as TaskLink[],
+    config: initialData.config as GanttConfig,
+    resources: [],
+    resourceAssignments: [],
+    searchQueries: { project: '', product: '' },
+    filterStatuses: { project: [], product: [] }
+  };
+};
+
+// 同步加载localStorage用于初始化（兼容性）
 const savedState = loadFromStorage();
 
 // 计算最终任务列表
@@ -312,46 +354,7 @@ let finalProductTasks: GanttTask[] = [];
 
 if (savedState) {
   finalProjectTasks = savedState.projectTasks || [];
-
-  // 从初始数据获取产品任务作为参考
-  const initialProductTasks = (initialData.tasks as GanttTask[]).filter(task => task.view === 'product');
-
-  // 检查产品任务是否需要从初始数据加载
-  if (!savedState.productTasks || savedState.productTasks.length === 0) {
-    // 产品任务为空，使用初始数据
-    finalProductTasks = initialProductTasks;
-    console.log('🔧 产品任务为空，从初始数据加载:', initialProductTasks.length);
-  } else if (savedState.productTasks.length < initialProductTasks.length * 0.7) {
-    // 产品任务数量过少，可能缺少新增任务
-    finalProductTasks = initialProductTasks;
-    console.log(`🔧 产品任务数量过少（${savedState.productTasks.length} < ${initialProductTasks.length}），从初始数据加载`);
-  } else {
-    // 检查是否包含新增任务（如 ai-customer-service-1）
-    const hasNewTasks = savedState.productTasks.some(task =>
-      task.id.includes('ai-customer-service-') ||
-      task.id.includes('product-recommendation-') ||
-      task.id.includes('order-tracking-') ||
-      task.id.includes('ai-opportunity-') ||
-      task.id.includes('intelligent-query-') ||
-      task.id.includes('internal-knowledge-') ||
-      task.id.includes('ai-replenishment-') ||
-      task.id.includes('ai-payment-') ||
-      task.id.includes('monitoring-alert-') ||
-      task.id.includes('user-behavior-') ||
-      task.id.includes('contract-review-')
-    );
-
-    if (!hasNewTasks) {
-      // 不包含新增任务，使用初始数据
-      finalProductTasks = initialProductTasks;
-      console.log('🔧 产品任务不包含新增任务，从初始数据加载');
-    } else {
-      // 使用保存的产品任务
-      finalProductTasks = savedState.productTasks;
-      console.log('✅ 使用保存的产品任务:', savedState.productTasks.length);
-    }
-  }
-
+  finalProductTasks = savedState.productTasks || [];
   finalTasks = [...finalProjectTasks, ...finalProductTasks];
 } else {
   // 使用初始数据
@@ -1002,7 +1005,7 @@ export const useGanttStore = create<GanttStore>()((set, get) => ({
 
     try {
       console.log('=== 从API加载数据 ===');
-      const response = await api.get('/api/tasks');
+      const response = await api.get('/tasks');
       console.log('API响应:', response);
 
       const tasks: GanttTask[] = response.tasks || [];
@@ -1011,7 +1014,7 @@ export const useGanttStore = create<GanttStore>()((set, get) => ({
       // 从API获取配置
       let config: GanttConfig;
       try {
-        const configResponse = await api.get('/api/config');
+        const configResponse = await api.get('/config');
         config = configResponse;
       } catch (error) {
         console.warn('获取配置失败，使用默认配置:', error);
