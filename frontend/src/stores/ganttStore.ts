@@ -303,47 +303,6 @@ const initializeTaskOrders = (tasks: GanttTask[]): GanttTask[] => {
   return updatedTasks;
 };
 
-// 初始化数据 - 优先从API加载
-const initializeData = async (): Promise<StorageData> => {
-  console.log('=== 初始化数据加载 ===');
-
-  // 1. 首先尝试从API加载（如果启用）
-  if (USE_API) {
-    try {
-      const apiData = await loadFromAPI();
-      if (apiData) {
-        console.log('✅ 成功从API加载数据');
-        saveToStorage(apiData); // 缓存到localStorage
-        return apiData;
-      }
-    } catch (error) {
-      console.warn('⚠️ API加载失败，尝试从localStorage加载:', error);
-    }
-  }
-
-  // 2. 回退到localStorage
-  const savedState = loadFromStorage();
-  if (savedState) {
-    console.log('✅ 从localStorage加载数据');
-    return savedState;
-  }
-
-  // 3. 使用初始数据
-  console.log('✅ 使用初始数据');
-  return {
-    version: STORAGE_VERSION,
-    timestamp: new Date().toISOString(),
-    projectTasks: (initialData.tasks as GanttTask[]).filter(task => task.view === 'project'),
-    productTasks: (initialData.tasks as GanttTask[]).filter(task => task.view === 'product'),
-    links: initialData.links as TaskLink[],
-    config: initialData.config as GanttConfig,
-    resources: [],
-    resourceAssignments: [],
-    searchQueries: { project: '', product: '' },
-    filterStatuses: { project: [], product: [] }
-  };
-};
-
 // 同步加载localStorage用于初始化（兼容性）
 const savedState = loadFromStorage();
 
